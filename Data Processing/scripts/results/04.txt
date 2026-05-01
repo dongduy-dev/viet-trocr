@@ -1,0 +1,114 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing> python scripts/04_export_lmdb.py
+04_export_lmdb.py
+Project root  : C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing
+Export levels : ['word_printed', 'word_handwritten', 'line_printed', 'line_handwritten']
+Splits        : ['train', 'val', 'test']
+
+════════════════════════════════════════════════════════════
+Level: WORD_PRINTED
+════════════════════════════════════════════════════════════
+  [CSV] Dùng labels_filtered.csv cho word
+  Phân phối: train=23458  val=6559  test=9298
+    [VALIDATE] 100/100 ảnh OK  |  0 lỗi (0.0%)
+    [MAP_SIZE] disk=205.0 MB  × 3.0  =  0.60 GB  (min 256 MB applied: False)
+    word_printed/train (attempt 1): 100%|█████████████████████████████████████| 23458/23458 [00:15<00:00, 1528.93img/s]
+    ✓ word_printed             /train :  23458 OK  |  0 lỗi  |  HW=0  PT=23458  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\word_printed\train
+    [MAP_SIZE] disk=51.5 MB  × 3.0  =  0.25 GB  (min 256 MB applied: True)
+    word_printed/val (attempt 1): 100%|█████████████████████████████████████████| 6559/6559 [00:03<00:00, 1780.28img/s]
+    ✓ word_printed             /val   :   6559 OK  |  0 lỗi  |  HW=0  PT=6559  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\word_printed\val
+    [MAP_SIZE] disk=87.9 MB  × 3.0  =  0.26 GB  (min 256 MB applied: False)
+    word_printed/test (attempt 1): 100%|████████████████████████████████████████| 9298/9298 [00:05<00:00, 1807.14img/s]
+    ✓ word_printed             /test  :   9298 OK  |  0 lỗi  |  HW=0  PT=9298  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\word_printed\test
+
+    [VERIFY] word_printed/train  →  num-samples=23458
+      [00000001] size=(24, 31)  label='CHẤT'
+      [00000002] size=(30, 31)  label='LƯỢNG'
+════════════════════════════════════════════════════════════
+Level: WORD_HANDWRITTEN
+════════════════════════════════════════════════════════════
+  [CSV] Dùng labels_filtered.csv cho word
+  Phân phối: train=99431  val=8097  test=2879
+    [VALIDATE] 100/100 ảnh OK  |  0 lỗi (0.0%)
+    [MAP_SIZE] disk=1051.1 MB  × 3.0  =  3.08 GB  (min 256 MB applied: False)
+    word_handwritten/train (attempt 1): 100%|██████████████████████████████████| 99431/99431 [01:42<00:00, 967.12img/s]
+    ✓ word_handwritten         /train :  99431 OK  |  0 lỗi  |  HW=99431  PT=0  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\word_handwritten\train
+    [MAP_SIZE] disk=84.1 MB  × 3.0  =  0.25 GB  (min 256 MB applied: True)
+    word_handwritten/val (attempt 1): 100%|█████████████████████████████████████| 8097/8097 [00:07<00:00, 1108.16img/s]
+    ✓ word_handwritten         /val   :   8097 OK  |  0 lỗi  |  HW=8097  PT=0  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\word_handwritten\val
+    [MAP_SIZE] disk=30.0 MB  × 3.0  =  0.25 GB  (min 256 MB applied: True)
+    word_handwritten/test (attempt 1): 100%|████████████████████████████████████| 2879/2879 [00:02<00:00, 1178.45img/s]
+    ✓ word_handwritten         /test  :   2879 OK  |  0 lỗi  |  HW=2879  PT=0  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\word_handwritten\test
+
+    [VERIFY] word_handwritten/train  →  num-samples=99431
+      [00000001] size=(128, 72)  label='KHÁI'
+      [00000002] size=(128, 53)  label='QUÁT'
+════════════════════════════════════════════════════════════
+Level: LINE_PRINTED
+════════════════════════════════════════════════════════════
+  [CSV] Dùng labels_filtered.csv cho line
+  Phân phối: train=50349  val=4911  test=3739
+    [VALIDATE] 100/100 ảnh OK  |  0 lỗi (0.0%)
+    [MAP_SIZE] disk=1945.4 MB  × 3.0  =  5.70 GB  (min 256 MB applied: False)
+    line_printed/train (attempt 1): 100%|█████████████████████████████████████| 50349/50349 [00:38<00:00, 1309.61img/s]
+    ✓ line_printed             /train :  50349 OK  |  0 lỗi  |  HW=0  PT=50349  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\line_printed\train
+    [MAP_SIZE] disk=166.4 MB  × 3.0  =  0.49 GB  (min 256 MB applied: False)
+    line_printed/val (attempt 1): 100%|█████████████████████████████████████████| 4911/4911 [00:03<00:00, 1504.11img/s]
+    ✓ line_printed             /val   :   4911 OK  |  0 lỗi  |  HW=0  PT=4911  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\line_printed\val
+    [MAP_SIZE] disk=159.3 MB  × 3.0  =  0.47 GB  (min 256 MB applied: False)
+    line_printed/test (attempt 1): 100%|████████████████████████████████████████| 3739/3739 [00:02<00:00, 1470.70img/s]
+    ✓ line_printed             /test  :   3739 OK  |  0 lỗi  |  HW=0  PT=3739  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\line_printed\test
+
+    [VERIFY] line_printed/train  →  num-samples=50349
+      [00000001] size=(354, 43)  label='THE COFFEE HOUSE'
+      [00000002] size=(309, 29)  label='403 Phan Huy Ích, P.14, QGò Vấp'
+════════════════════════════════════════════════════════════
+Level: LINE_HANDWRITTEN
+════════════════════════════════════════════════════════════
+  [CSV] Dùng labels_filtered.csv cho line
+  Phân phối: train=8044  val=522  test=738
+    [VALIDATE] 100/100 ảnh OK  |  0 lỗi (0.0%)
+    [MAP_SIZE] disk=1743.7 MB  × 3.0  =  5.11 GB  (min 256 MB applied: False)
+    line_handwritten/train (attempt 1): 100%|████████████████████████████████████| 8044/8044 [00:09<00:00, 879.60img/s]
+    ✓ line_handwritten         /train :   8044 OK  |  0 lỗi  |  HW=8044  PT=0  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\line_handwritten\train
+    [MAP_SIZE] disk=160.0 MB  × 3.0  =  0.47 GB  (min 256 MB applied: False)
+    line_handwritten/val (attempt 1): 100%|████████████████████████████████████████| 522/522 [00:00<00:00, 754.63img/s]
+    ✓ line_handwritten         /val   :    522 OK  |  0 lỗi  |  HW=522  PT=0  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\line_handwritten\val
+    [MAP_SIZE] disk=126.7 MB  × 3.0  =  0.37 GB  (min 256 MB applied: False)
+    line_handwritten/test (attempt 1): 100%|███████████████████████████████████████| 738/738 [00:00<00:00, 937.76img/s]
+    ✓ line_handwritten         /test  :    738 OK  |  0 lỗi  |  HW=738  PT=0  →  C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb\line_handwritten\test
+
+    [VERIFY] line_handwritten/train  →  num-samples=8044
+      [00000001] size=(2048, 227)  label='KHÁI QUÁT VỀ BIỂN ĐẢO VIỆT NAM'
+      [00000002] size=(2048, 131)  label='Nước ta giáp với biển Đông ở hai phía Đông và Nam. Vùng'
+
+════════════════════════════════════════════════════════════
+HOÀN THÀNH
+════════════════════════════════════════════════════════════
+  Tổng mẫu đã xử lý : 218025
+  LMDB root          : C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\lmdb
+
+  Cấu trúc LMDB đã tạo:
+    lmdb/word_printed/train/  (23458 samples)
+    lmdb/word_printed/val/  (6559 samples)
+    lmdb/word_printed/test/  (9298 samples)
+    lmdb/word_handwritten/train/  (99431 samples)
+    lmdb/word_handwritten/val/  (8097 samples)
+    lmdb/word_handwritten/test/  (2879 samples)
+    lmdb/line_printed/train/  (50349 samples)
+    lmdb/line_printed/val/  (4911 samples)
+    lmdb/line_printed/test/  (3739 samples)
+    lmdb/line_handwritten/train/  (8044 samples)
+    lmdb/line_handwritten/val/  (522 samples)
+    lmdb/line_handwritten/test/  (738 samples)
+
+  TrOCR training guide:
+    Stage 1a - Pre-warm encoder (Printed) : lmdb/word_printed/train/
+    Stage 1b - Pre-warm encoder (Handwrit): lmdb/word_handwritten/train/
+    Stage 2a - Printed fine-tune          : lmdb/line_printed/train/
+    Stage 2b - Handwritten adapt          : lmdb/line_handwritten/train/
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing>

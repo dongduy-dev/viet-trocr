@@ -1,0 +1,63 @@
+# ── Synthetic Printed Data Generation Config ─────────────────────────────────
+# Tất cả cài đặt cho pipeline generate synthetic printed Vietnamese data.
+
+corpus:
+  # Số câu tối thiểu trong corpus (built-in corpus có ~3000 câu sẵn)
+  min_sentences: 2000
+  # Bao gồm niits legal labels đã lọc sạch
+  include_niits: true
+  niits_clean_path: "../Data Processing/niits_legal_ocr/niits_clean_labels.txt"
+
+fonts:
+  # Thư mục chứa font .ttf
+  font_dir: "fonts"
+  # Danh sách Google Fonts sẽ tải (hỗ trợ tiếng Việt)
+  google_fonts:
+    - "Roboto"
+    - "Open+Sans"
+    - "Noto+Sans"
+    - "Noto+Serif"
+    - "Montserrat"
+    - "Source+Sans+3"
+    - "Nunito"
+    - "Be+Vietnam+Pro"
+    - "Inter"
+    - "Lora"
+    - "Merriweather"
+    - "Tinos"             # Times New Roman alternative
+    - "Arimo"             # Arial alternative
+    - "Libre+Baskerville"
+
+generation:
+  # Tổng số ảnh cần generate
+  total_images: 30000
+  # Kích thước ảnh đầu ra
+  image_height: 64           # Chiều cao cố định (px)
+  min_width: 128             # Chiều rộng tối thiểu
+  max_width: 2048            # Chiều rộng tối đa
+  # Font size range
+  font_size_min: 28
+  font_size_max: 48
+  # Padding quanh text
+  padding_x: 10
+  padding_y: 8
+  # Augmentation
+  blur_prob: 0.15            # Xác suất blur
+  blur_radius_max: 1.5
+  noise_prob: 0.10           # Xác suất thêm Gaussian noise
+  noise_std: 8
+  rotation_prob: 0.20        # Xác suất xoay nhẹ
+  rotation_max_deg: 2.0
+  # Background
+  bg_color_range: [230, 255] # Nền trắng đến xám nhạt
+  fg_color_range: [0, 60]    # Chữ đen đến xám đậm
+  # Output
+  output_dir: "output"
+  output_format: "png"
+  # Workers (parallel generation)
+  num_workers: 4
+
+integration:
+  # Copy sang pipeline chính
+  target_raw_dir: "../Data Processing/raw_data/Printed/Synthetic_Modern"
+  source_tag: "synthetic_modern"

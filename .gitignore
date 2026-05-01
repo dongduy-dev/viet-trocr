@@ -1,0 +1,127 @@
+# ============================================================
+# DATA PROCESSING PIPELINE
+# ============================================================
+
+# Ignore everything inside lmdb/ but keep the folder
+Data Processing/lmdb/**
+!Data Processing/lmdb/.gitkeep
+
+# Ignore everything inside processed/ but keep the folder
+Data Processing/processed/**
+!Data Processing/processed/.gitkeep
+
+# Ignore everything inside raw_data/ but keep the folder
+Data Processing/raw_data/**
+!Data Processing/raw_data/.gitkeep
+
+
+# ============================================================
+# FINE TUNING PIPELINE
+# ============================================================
+
+# Ignore everything inside lmdb/ but keep the folder
+Fine tuning/lmdb/**
+!Fine tuning/lmdb/.gitkeep
+
+# Ignore everything inside checkpoints/ but keep the folder
+Fine tuning/checkpoints/**
+!Fine tuning/checkpoints/.gitkeep
+
+
+# ============================================================
+# GENERATE SYNTHETIC PRINTED DATA PIPELINE
+# ============================================================
+
+# Ignore everything inside output/ but keep the folder
+Generate Synthetic Printed Data/output/**
+!Generate Synthetic Printed Data/output/.gitkeep
+
+
+# ============================================================
+# MODEL & TRAINING ARTIFACTS (global)
+# ============================================================
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.safetensors
+*.h5
+*.hdf5
+
+
+# ============================================================
+# LOGS (global)
+# ============================================================
+Fine tuning/logs/**
+!Fine tuning/logs/.gitkeep
+*.log
+wandb/
+mlruns/
+tensorboard_logs/
+
+
+# ============================================================
+# PYTHON
+# ============================================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.so
+
+
+# ============================================================
+# VIRTUAL ENVIRONMENT
+# ============================================================
+venv/
+env/
+.env
+.venv/
+ENV/
+
+
+# ============================================================
+# JUPYTER
+# ============================================================
+.ipynb_checkpoints/
+*.ipynb
+
+
+# ============================================================
+# ARCHIVES & COMPRESSED DATA
+# ============================================================
+*.zip
+*.tar.gz
+*.tar
+*.rar
+*.7z
+
+
+# ============================================================
+# OS FILES
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# ============================================================
+# IDE
+# ============================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+Commit-Naming-Rules.txt
+
+# ============================================================
+# SECRETS
+# ============================================================
+*.env
+secrets.yaml
+credentials.json

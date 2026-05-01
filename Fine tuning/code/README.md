@@ -1,0 +1,1528 @@
+# TrOCR Vietnamese Multi-modal OCR
+
+A production-ready training pipeline for fine-tuning Microsoft TrOCR to recognize
+both **printed** and **handwritten** Vietnamese text — including full diacritics —
+on Google Colab Pro with Google Drive checkpointing.
+
+---
+
+## Table of Contents
+
+1. [Project Overview](#1-project-overview)
+2. [Repository Structure](#2-repository-structure)
+3. [Datasets](#3-datasets)
+4. [LMDB Directory Structure](#4-lmdb-directory-structure)
+5. [Environment Setup](#5-environment-setup)
+6. [Configuration Guide](#6-configuration-guide)
+7. [Training Strategy — Full Pipeline](#7-training-strategy--full-pipeline)
+8. [Optimization Techniques](#8-optimization-techniques)
+9. [Running the Code](#9-running-the-code)
+10. [Monitoring & Evaluation](#10-monitoring--evaluation)
+11. [Checkpoint & Resume](#11-checkpoint--resume)
+12. [GPU Guide & Time Estimates](#12-gpu-guide--time-estimates)
+13. [Known Issues & Bug Log](#13-known-issues--bug-log)
+14. [Design Decisions & Rationale](#14-design-decisions--rationale)
+
+---
+
+## 1. Project Overview
+
+### The Problem
+
+Vietnamese presents three compounding challenges for OCR:
+
+- **Diacritics stacked vertically**: A single syllable can carry a tone mark
+  AND a vowel modifier simultaneously (e.g., `ộ` = `o` + circumflex + dot-below).
+  A model trained on Latin scripts has no concept of this vertical stacking.
+- **Two radically different visual domains**: Printed text (clean, uniform spacing)
+  and handwritten text (stroke variation, baseline drift, ink bleed) have
+  almost disjoint visual distributions. Training both in one pass causes
+  gradient conflict and slow convergence.
+- **Catastrophic Forgetting**: Fine-tuning on handwritten data after printed data
+  causes the model to forget printed recognition — a well-documented phenomenon
+  in sequential transfer learning.
+
+### The Solution
+
+A three-stage curriculum training pipeline built on
+`microsoft/trocr-base-stage1` (IIT-CDIP pre-trained, no language bias) that:
+
+1. **Stage 1** — Warms up the ViT encoder on word-level images with a curriculum
+   that progressively introduces pseudo-line concatenation, resolving the Decoder
+   positional embedding conflict before real line data.
+2. **Stage 2a** — Fine-tunes exclusively on printed LINE data to build a clean
+   Vietnamese language prior in the Decoder, then computes the Fisher Information
+   Matrix for EWC protection.
+3. **Stage 2b** — Adapts to handwritten LINE data using a Mixed Replay strategy
+   (70% HW + 30% printed) protected by Elastic Weight Consolidation (EWC) to
+   prevent forgetting printed recognition.
+
+Stage 3 (paragraph adaptation) is implemented but disabled (`stage3.enabled: false`)
+pending LMDB preparation.
+
+---
+
+## 2. Repository Structure
+
+```
+trocr_viet/
+│
+├── config.yaml                  Master hyperparameter file — edit this first
+│
+├── requirements.txt             pip dependencies
+│
+├── main.py                      Entry point: model setup, augmentation,
+│                                Unicode normalization, DataLoader builders,
+│                                stage dispatch, ViT pos embed interpolation
+│
+├── data/
+│   ├── __init__.py
+│   └── dataset.py               LMDBDataset (NFC label normalization, auto-detect
+│                                key format), resize_for_vit (scale-to-fit 128×1536),
+│                                build_pseudo_line, CurriculumCollateFn (Task-Mixing
+│                                Isolation), MixedBatchSampler, build_mixed_dataset_and_loader
+│
+├── core/
+│   ├── __init__.py
+│   ├── ewc.py                   EWC: Fisher computation with FP32 cast, dummy
+│   │                            optimizer outside loop, scaler.update() fix,
+│   │                            zero_grad(set_to_none=True) cleanup
+│   └── trainer.py               TrOCRTrainer: LLRD optimizer, AMP (torch.amp API),
+│                                Gradient Checkpointing (Fisher + Stage 2b),
+│                                dual validation (printed CER + HW CER),
+│                                auto-resume, sliding-window early stopping
+│
+└── vocab/
+    └── vietnamese_vocab.txt     254 tokens: Vietnamese diacritics + ASCII, all NFC
+```
+
+---
+
+## 3. Datasets
+
+| Name | Level | Domain | Samples (train) | Notes |
+|---|---|---|---|---|
+| UIT-HWDB | word, line, paragraph | Handwritten | 99,503 / 6,494 / 1,029 | Offline version of VNOnDB; synthetic texture via IAM color transfer |
+| VinText | word | Printed (scene) | 25,776 | Multi-orientation, artistic fonts, complex backgrounds |
+| anyuuus Vietnamese OCR | line | Printed | 18,116 | Clean printed lines, high contrast; historical Vietnamese text (~77% of original Stage 2a) |
+| MC_OCR 2021 | line | Printed | 5,285 | Real-world receipts; glare, thermal print degradation |
+| **Synthetic Printed Vietnamese** | **line** | **Printed** | **~30,000** | **Modern Vietnamese text rendered with 14 Google Fonts families; 7 domains (legal, news, education, business, everyday, sci/tech, numeric). Generated by `Generate_Synthetic_Printed_Data/run_all.py` to dilute historical text bias in Stage 2a.** |
+| Cinnamon AI | line | Handwritten | 1,823 (d2 only in train) | Extreme difficulty: scrawled addresses, heavy noise |
+| Viet-Wiki-Handwriting | paragraph | Handwritten | 4,636 | Synthetic HW fonts on Wikipedia Vietnamese text |
+
+**Stage 2a Data Composition (after synthetic generation):**
+
+| Source | Samples | Percentage |
+|--------|---------|------------|
+| anyuuus (historical Vietnamese) | ~18,116 | ~34% |
+| MC_OCR (real-world receipts) | ~5,285 | ~10% |
+| **Synthetic (modern Vietnamese)** | **~30,000** | **~56%** |
+| **TOTAL** | **~53,401** | **100%** |
+
+> [!NOTE]
+> The synthetic data is generated by `Generate_Synthetic_Printed_Data/run_all.py`
+> (~30-60 min). After generation, run `03_split.py` and `04_export_lmdb.py` to
+> integrate into the training LMDB. See the synthetic data README for details.
+
+**Split statistics after 03_split.py (before synthetic data):**
+
+```
+WORD  total=153,533  → train=125,279 | val=15,305 | test=12,949
+LINE  total= 38,845  → train= 31,718 | val= 4,053 | test= 3,074
+PARA  total=  6,940  → train=  5,665 | val=   664 | test=   611
+```
+
+**Known split notes:**
+
+- `cinnamon_d1` (val=15 only) and `cinnamon_pt` (test=549 only) follow the
+  original author's split. Do not re-merge — treat `cinnamon_pt` test CER
+  as an out-of-distribution generalization metric, not a training signal.
+- HW LINE train (8,317) is significantly smaller than printed (23,401).
+  This imbalance is corrected in Stage 2b via `MixedBatchSampler` exact 70/30
+  ratio per batch and training augmentation, NOT by re-splitting.
+
+---
+
+## 4. LMDB Directory Structure
+
+After running `03_split.py` and `04_export_lmdb.py` with domain separation
+enabled, your LMDB root should match exactly the 6 paths declared in
+`config.yaml → paths.lmdb`:
+
+```
+/content/lmdb/                         ← local_lmdb_root (SSD copy from Drive)
+├── word_printed/
+│   └── train/                         ← VinText word crops (25,776 samples)
+├── word_handwritten/
+│   └── train/                         ← UIT-HWDB word crops (99,503 samples)
+├── line_printed/
+│   ├── train/                         ← anyuuus + MC_OCR (23,401 samples)
+│   └── val/                           ← Printed-only val (3,504 samples)
+└── line_handwritten/
+    ├── train/                          ← UIT-HWDB lines + Cinnamon d2 (8,317 samples)
+    └── val/                            ← Handwritten-only val (549 samples)
+```
+
+`paragraph/` and `word/val/` are intentionally absent: Stage 3 is disabled;
+word-level validation is skipped in favor of the more realistic line-level CER signal.
+
+**LMDB key schema** (per database, auto-detected at startup — supports both
+8-digit and 9-digit, 0-indexed and 1-indexed):
+
+```
+num-samples          → ASCII integer, total sample count
+image-000000000      → raw JPEG/PNG bytes
+label-000000000      → UTF-8 label (NFC-normalized on read in __getitem__)
+image-000000001      → ...
+```
+
+There is **no** `datatype-` key in the LMDB files. Data type is inferred from
+which LMDB path is loaded and passed as `default_data_type` to `LMDBDataset`.
+
+---
+
+## 5. Environment Setup
+
+Run the following Colab cells **at the start of every training session** before
+executing `main.py`. The LMDB copy is mandatory — Drive I/O latency (~50ms/read)
+is ~50× slower than local SSD (~1ms/read) on 125k+ random-access samples.
+
+```python
+# Cell 1: Mount Drive
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Cell 2: Copy LMDB to local SSD (CRITICAL — must run every session)
+import os
+os.makedirs('/content/lmdb', exist_ok=True)
+!cp -r "/content/drive/MyDrive/OCR/lmdb/." "/content/lmdb/"
+!du -sh /content/lmdb/*   # Verify all 4 domain directories exist
+
+# Cell 3: Install dependencies
+!pip install -r /content/drive/MyDrive/OCR/code/requirements.txt
+
+# Cell 4: Copy code to local filesystem
+!cp -r "/content/drive/MyDrive/OCR/code/trocr_viet" "/content/trocr_viet"
+
+# Cell 5: Verify GPU
+import torch
+props = torch.cuda.get_device_properties(0)
+print(f"GPU: {props.name} | VRAM: {props.total_memory/1e9:.1f}GB")
+```
+
+**requirements.txt:**
+
+```
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.35.0
+tokenizers>=0.14.0
+datasets>=2.14.0
+lmdb>=1.4.1
+Pillow>=9.5.0
+numpy>=1.24.0
+opencv-python-headless>=4.8.0
+albumentations>=1.3.1
+jiwer>=3.0.3
+pyyaml>=6.0
+tqdm>=4.65.0
+```
+
+---
+
+## 6. Configuration Guide
+
+All hyperparameters live in `config.yaml`. Below are the keys most likely
+to need tuning for your hardware and dataset size.
+
+### Key Paths
+
+```yaml
+paths:
+  gdrive_lmdb_root: "/content/drive/MyDrive/OCR/lmdb"
+  local_lmdb_root:  "/content/lmdb"      # LMDB must be copied here first (Cell 2)
+  vocab_file:       ".../vocab/vietnamese_vocab.txt"
+  checkpoint_dir:   ".../checkpoints"     # Saved back to Drive automatically
+  log_dir:          ".../logs"
+```
+
+### Model Selection
+
+```yaml
+model:
+  pretrained_name: "microsoft/trocr-base-stage1"
+```
+
+Do **not** change this to `trocr-base-handwritten`. That model carries
+English IAM cursive priors that conflict with Vietnamese printed fine-tuning.
+See [Design Decisions](#14-design-decisions--rationale) for a full explanation.
+
+### Model Resolution
+
+```yaml
+model:
+  image_height:       128    # ViT input height after resize_for_vit
+  image_width:        1536   # ViT input width after resize_for_vit
+  vit_h_patches:      8      # 128 / 16 = 8 patch rows
+  vit_w_patches:      96     # 1536 / 16 = 96 patch columns
+  max_target_length:  256    # Decoder max output token length
+```
+
+The 128×1536 rectangular input matches the actual line-level data distribution
+(heights 32–128px, widths up to ~2000px). Pre-trained 24×24 ViT positional
+embeddings are bicubic-interpolated to 8×96 at model init. There is no
+`max_aspect_ratio` — `resize_for_vit()` scales to fit and never crops.
+
+### Learning Rate Tuning Guide
+
+| Parameter | Stage 1 | Stage 2a | Stage 2b | Notes |
+|---|---|---|---|---|
+| `decoder_base` | 1e-4 | 5e-5 | 5e-6 | Reduce if loss spikes |
+| `encoder_top_multiplier` | 0.3 | 0.5 | 0.2 | Top ViT layers (6–11) |
+| `encoder_low_multiplier` | 0.1 | 0.1 | 0.02 | Bottom ViT layers (0–5), near frozen |
+| `encoder_split_layer` | 6 | 6 | 6 | ViT layer index splitting low / top groups |
+
+### EWC Lambda Tuning Reference
+
+```yaml
+stage2b:
+  ewc:
+    lambda: 500.0
+```
+
+| Observation during Stage 2b | Action |
+|---|---|
+| `printed_cer` rises > 1% over 3 consecutive epochs | Increase lambda: 500 → 800 |
+| `handwritten_cer` not improving after 10 epochs | Decrease lambda: 500 → 200 |
+| EWC loss >> CE loss (ratio > 20:1) | Lambda too high, reduce |
+| EWC loss ≈ 0 | Fisher too small; recompute with `fisher_samples: 500` |
+
+### Effective Batch Sizes
+
+| Stage | batch_size | accumulation_steps | Effective batch |
+|---|---|---|---|
+| Stage 1 | 32 | 4 | 128 |
+| Stage 2a | 8 | 8 | 64 |
+| Stage 2b | 8 | 8 | 64 |
+| Stage 3 | 16 | 4 | 64 |
+
+If OOM occurs on any stage, halve `batch_size` and double `accumulation_steps`
+to keep the effective batch size constant.
+
+---
+
+## 7. Training Strategy — Full Pipeline
+
+### Architecture Flow
+
+```
+Word LMDB (printed)  ──┐
+                        ├── ConcatDataset → CurriculumCollateFn → Stage 1
+Word LMDB (handwr.)  ──┘         │
+                                  │  Task-Mixing Isolation (always active):
+                                  │    printed  → always isolated words (no concat)
+                                  │    handwr.  → curriculum pseudo-lines
+                                  ▼
+                         Stage 1 [20 epochs]:
+                           Encoder learns Vietnamese visual features
+                           Decoder positional embeddings calibrated
+
+Line LMDB (printed) ────── Stage 2a [11 epochs]:
+                              Decoder learns Vietnamese language prior
+                              │
+                              └─ Fisher Information Matrix (1000 batches)
+                                 Saves: ewc_state.pt + stage2a_best.pt
+
+Line LMDB (HW 70%)    ──┐
+Line LMDB (pr. 30%)   ──┤ MixedBatchSampler → Stage 2b [25 epochs]:
+  replay buffer (15%) ──┘                       EWC penalty active
+                                                 Early stopping: printed CER guard
+                                                 HW CER smoothed: 3-epoch window
+```
+
+---
+
+### Stage 1 — Curriculum Word → Pseudo-line (20 epochs)
+
+**Goal:** Adapt the ViT encoder to Vietnamese character morphology and bridge
+the word→line positional embedding gap in the Decoder.
+
+**The core problem this solves:**
+
+TrOCR uses Absolute Positional Embeddings (APE) in the RoBERTa decoder.
+Pre-trained on English, positions 0–7 are relatively language-agnostic, but
+positions 8+ encode English long-range syntactic patterns. If we jump directly
+from word-level training to line-level training, the Decoder has never generated
+sequences longer than ~7 tokens, and positional embeddings at positions 8–50
+retain English priors. The first line-level batches produce chaotic gradients
+as the model tries to simultaneously fix its positional encoding and learn
+Vietnamese syntax.
+
+**ViT Positional Embedding Interpolation:**
+
+Before any training begins, `interpolate_vit_pos_embeddings()` is called in
+`setup_model()`. It bicubic-interpolates the pre-trained 24×24 positional
+embedding grid to 8×96, matching the new 128×1536 input resolution.
+
+```python
+# Pre-trained 577 embeddings: 1 CLS + 24×24 = 576 patch embeddings
+# Interpolated to: 1 CLS + 8×96 = 769 embeddings
+interpolate_vit_pos_embeddings(model, new_h_patches=8, new_w_patches=96)
+```
+
+Bicubic interpolation preserves the learned spatial relationships from
+pre-training with C¹ smooth gradients, avoiding discontinuities at patch
+boundaries that bilinear interpolation would introduce.
+
+**Curriculum phases:**
+
+**Phase 1A (epochs 0–4):** `word_ratio=1.0`
+
+All samples are isolated words (2–7 tokens each). The ViT encoder learns
+Vietnamese stroke patterns and diacritic placement without sequence pressure.
+Decoder cross-attention is **not frozen** — an earlier design froze it here,
+but this caused position 1 (`input=[bos,bos]`) to saturate to bos prediction
+(prob=1.0) because the decoder had no image signal. By the time cross-attention
+was unfrozen, the saturation was irreversible.
+
+**Phase 1B (epochs 5–14):** `word_ratio=0.5`
+
+50% of **handwritten** words are concatenated into 3–5 word pseudo-lines
+(~7–15 token sequences). Printed words remain isolated (Task-Mixing Isolation
+— always enforced). The Decoder begins calibrating positional embeddings
+for positions 8–25.
+
+**Phase 1C (epochs 15–19):** `word_ratio=0.2`
+
+80% of handwritten words become 5–7 word pseudo-lines (~15–25 token sequences,
+near real line length). The Decoder fully calibrates high positional embeddings
+before Stage 2 line data is introduced.
+
+**Task-Mixing Isolation (always active):**
+
+Printed words (VinText scene-text) have complex multi-color backgrounds with
+sharp brightness transitions at image borders. Concatenating two VinText crops
+creates a hard vertical seam spanning 1–2 ViT patches — the model learns this
+seam as a spurious word-boundary signal. Handwritten words (UIT-HWDB) have
+near-uniform paper backgrounds; `build_pseudo_line()` fills the canvas with the
+median pixel value of all source words, making seams visually seamless.
+
+```
+printed_pool  → ALWAYS pass through as isolated words (no concatenation ever)
+handwritten_pool → apply word_ratio curriculum for pseudo-line construction
+```
+
+**Pseudo-line construction parameters (handwritten pool only):**
+
+```yaml
+pseudo_line:
+  spacing_min: 8     # Min px gap between words (natural inter-word variation)
+  spacing_max: 24    # Max px gap between words
+  vertical_jitter: 3 # ±px baseline shift per word (simulates writing slant)
+```
+
+---
+
+### Stage 2a — Printed LINE Fine-tuning (11 epochs)
+
+**Goal:** Build a clean Vietnamese printed language prior in the Decoder.
+
+Training exclusively on `line_printed_train` (anyuuus + MC_OCR + synthetic modern Vietnamese):
+
+- Clean printed lines teach the Decoder Vietnamese N-gram statistics, syllable
+  boundaries, tonal patterns, and diacritic co-occurrences without added noise
+  from handwriting style variation.
+- The ~30,000 synthetic modern Vietnamese samples dilute the historical text
+  bias from the anyuuus dataset, improving generalization to contemporary text.
+- The Decoder abandons its English N-gram prior and learns to decode Vietnamese
+  printed text at the line level.
+
+After convergence, the **Fisher Information Matrix** is computed over 1000
+printed LINE batches (`fisher_samples: 1000`). This estimates how "important"
+each parameter is for printed text recognition. Parameters with high Fisher
+values will be heavily penalized from moving in Stage 2b.
+
+**Critical:** The `fisher_loader` uses `transform=None` (no augmentation).
+Augmented gradients would bias the Fisher matrix, causing EWC to protect
+the wrong weights.
+
+**What to watch:**
+
+- `printed_cer` should converge to 5–15% range by epoch 9–10 depending on data quality.
+- `handwritten_cer` will be 40–65% (model has not seen HW line data yet — expected).
+- Save `ewc_state.pt` and `stage2a_best.pt` to Drive before ending the session.
+  These are the anchor points for Stage 2b.
+
+---
+
+### Stage 2b — Mixed HW + Printed Replay with EWC (25 epochs)
+
+**Goal:** Adapt to handwritten text WITHOUT forgetting printed recognition.
+
+**The three-mechanism defense against Catastrophic Forgetting:**
+
+**Mechanism 1 — Mixed Replay Buffer**
+
+Every batch is composed with `MixedBatchSampler` (exact per-batch ratio,
+not just in expectation):
+
+```
+Each batch = 70% handwritten LINE + 30% printed LINE (replay buffer)
+Replay buffer = random 15% subsample of line_printed_train
+```
+
+Every gradient update sees printed text, continuously rehearsing the skill
+while handwritten adaptation proceeds.
+
+**Mechanism 2 — Elastic Weight Consolidation (EWC)**
+
+The EWC loss is added to CrossEntropy during all Stage 2b updates:
+
+```
+L_total = L_CrossEntropy + (λ/2) × Σᵢ Fᵢ(θᵢ - θ*ᵢ)²
+```
+
+Where:
+- `Fᵢ` = Fisher Information for parameter `i` (importance for printed OCR),
+  estimated over 200 printed batches at the end of Stage 2a.
+- `θ*ᵢ` = Stage 2a best checkpoint weights (the "anchor" we must not drift from).
+- `θᵢ` = current weights being updated in Stage 2b.
+
+Parameters critical for printed text are penalized from moving. Parameters
+irrelevant for printed text can move freely to learn handwriting.
+
+**Mechanism 3 — LLRD with Ultra-low Base LR**
+
+Stage 2b uses `decoder_base=5e-6` (10× lower than Stage 2a):
+
+```
+Encoder bottom layers: 5e-6 × 0.02 = 1e-7   (near frozen)
+Encoder top layers:    5e-6 × 0.2  = 1e-6
+Cross-attention:       5e-6 × 0.5  = 2.5e-6
+Decoder layers:        5e-6
+```
+
+Only the parts of the model that need to change for handwriting adaptation
+actually change significantly.
+
+**Early stopping guard:**
+
+If `printed_cer` at any evaluation point is more than 2 percentage points
+above the best Stage 2a `printed_cer`, training stops immediately. The HW CER
+is smoothed over a 3-epoch sliding window to avoid false stops from the noisy
+549-sample validation set.
+
+---
+
+### Stage 3 — Paragraph Adaptation (disabled — postponed)
+
+**Current status:** `stage3.enabled: false` in `config.yaml`. Stage 3 is not
+part of the current training run. The paragraph LMDB has not been prepared yet.
+
+**When to enable:** Once `04_export_lmdb.py` has been run for paragraph-level
+data, set `stage3.enabled: true` and add the `paragraph_train` / `paragraph_val`
+keys to `config.yaml → paths.lmdb`. Without those keys, `build_stage3_loaders()`
+will raise `KeyError`.
+
+**What Stage 3 does when enabled:**
+
+- Trains on paragraph-level data (UIT-HWDB paragraphs + Viet-Wiki synthetic HW).
+- Encoder is **fully frozen** — visual features are complete after Stage 2b.
+- Only Decoder cross-attention adapts at `decoder_base=2e-6`.
+- Goal: extend the Decoder to handle long multi-line sequences (50–128 tokens).
+- Monitor LINE val CER alongside paragraph val to detect any regression.
+
+---
+
+## 8. Optimization Techniques
+
+### Layer-wise Learning Rate Decay (LLRD)
+
+Different model components require different learning rates. Implemented in
+`core/trainer.py :: build_llrd_optimizer()` using `AdamW` with `weight_decay=0.01`.
+Separate parameter groups per layer allow PyTorch to track LR independently in
+the optimizer state.
+
+```
+Encoder layers 0–5  (low):  base_lr × encoder_low_multiplier   (protect primitive visual features)
+Encoder layers 6–11 (top):  base_lr × encoder_top_multiplier   (allow moderate adaptation)
+Decoder cross-attention:     base_lr × 0.5                      (critical bridge — intermediate)
+All other decoder layers:    base_lr × 1.0                      (full base LR — most adaptation needed)
+```
+
+### Warmup + Cosine Decay Scheduler
+
+Linear warmup for `warmup_steps` optimizer steps, then cosine decay from peak
+LR to 0 over the remaining steps. Scheduler steps align with **optimizer updates**
+(every `accumulation_steps` batches), not raw gradient steps.
+
+| Stage | Total optimizer steps | warmup_steps | Warmup ratio |
+|---|---|---|---|
+| Stage 1 | ~19,560 | 1,000 | ~5.1% |
+| Stage 2a | ~4,015 | 500 | ~12.5% |
+| Stage 2b | ~5,175 | 500 | ~9.7% |
+
+Warmup prevents large gradient steps at initialization when internal activations
+are far from equilibrium. Cosine decay avoids abrupt LR drops near convergence.
+
+### Mixed Precision Training (AMP)
+
+Uses `torch.amp.GradScaler("cuda")` and `torch.amp.autocast("cuda")` — the
+non-deprecated PyTorch 2.x API. Enabled by `fp16: true` in config. Reduces VRAM
+usage ~30–40% and speeds ViT forward passes ~1.5× on modern GPUs.
+
+```python
+with torch.amp.autocast("cuda", enabled=fp16):
+    outputs = model(pixel_values=pixel_values, labels=labels)
+    loss = outputs.loss / accumulation_steps
+
+scaler.scale(loss).backward()
+scaler.unscale_(optimizer)
+torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm=1.0)
+scaler.step(optimizer)
+scaler.update()
+```
+
+### Gradient Checkpointing
+
+Enabled in two specific places to manage VRAM safely on L4 (24GB):
+
+- Fisher computation (after Stage 2a): handles `batch_size=1` line images
+  without exceeding VRAM during backward pass.
+- Stage 2b training: enabled at epoch start, disabled before eval, every epoch.
+
+GC ON + batch=16 on L4 → ~14GB VRAM (10GB safety buffer for eval).
+GC OFF + batch=32 on L4 → ~22GB VRAM (2GB buffer — OOM risk during eval).
+The ~20% compute overhead from GC is worth the safety buffer.
+
+### Data Augmentation
+
+Applied to **training datasets only**. Never applied to val sets or `fisher_loader`.
+
+```python
+T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.0, hue=0.0)
+_MedianFillRotation(degrees=2.0)   # Adaptive fill from border pixels
+T.RandomApply([T.GaussianBlur((3, 3), sigma=(0.1, 1.0))], p=0.3)
+```
+
+`saturation=0` and `hue=0` keep images grayscale-equivalent, avoiding color
+hallucinations on black-ink text. `degrees=2.0` simulates natural baseline drift
+without destroying diacritics. `_MedianFillRotation` computes fill color per-image
+from border pixels, matching `resize_for_vit()`'s median padding — avoids
+bright-stripe artifacts on dark-background VinText scene-text images.
+
+For Stage 1 pseudo-lines, transforms are applied to the **assembled pseudo-line**
+(not per-word), producing more realistic whole-line augmentation.
+
+### Resize for ViT — Scale-to-Fit (Never Crops)
+
+```
+Input image (any size)
+    ↓
+Step 1: Compute uniform scale factor to fit within 128×1536
+        Both dimensions respected — preserve aspect ratio
+    ↓
+Step 2: Bicubic resize to scaled dimensions
+    ↓
+Step 3: Pad to exact 128×1536 with median pixel fill
+        Top-left alignment: content at (0,0), padding fills right/bottom
+        → matches ViT's left-to-right, top-to-bottom patch reading order
+```
+
+With 128×1536 input and 16px patches: 8×96 = 768 patches per image.
+Every patch covers 16×16 pixels — sufficient resolution for Vietnamese
+diacritics including vertically stacked tone marks.
+
+### Unicode Normalization (NFC)
+
+LMDB labels are NFC-normalized in `dataset.py :: LMDBDataset.__getitem__()`.
+Vocabulary tokens are NFC-normalized and deduplicated before `add_tokens()` in
+`main.py :: setup_model()`. A validation log is printed at startup to confirm
+the tokenizer produces single-character tokens rather than byte-fallback sequences.
+
+Verify in the startup log:
+
+```
+[Setup] Tokenizer validation:
+  Input : Đại học Tôn Đức Thắng - TrOCR ặ ợ ướ
+  Tokens: ['Đ', 'ạ', 'i', 'Ġ', 'h', 'ọ', 'c', 'Ġ', ...]
+```
+
+Note: `Ġ` (token ID 1437) represents a space separator in the GPT-2/RoBERTa
+tokenizer — this is **normal** BPE behavior, not a byte-fallback error. A true
+byte-fallback error would produce tokens like `<0x41>` or `â–` for Vietnamese
+diacritics. The tokenizer is functioning correctly if each Vietnamese diacritic
+maps to its own single-token ID.
+
+---
+
+## 9. Running the Code
+
+### Recommended: 3 Separate Sessions on L4
+
+**Session 1 — Stage 1 (~4–5 hours):**
+
+```bash
+# After running setup cells (Section 5)
+%cd /content/trocr_viet
+!python main.py --stage 1 --config config.yaml
+```
+
+Start before sleep — Stage 1 is the longest stage (20 epochs).
+
+**Session 2 — Stage 2a + Fisher (~3 hours):**
+
+```bash
+# Run setup cells first
+!python main.py --stage 2a --config config.yaml
+
+# Before ending session — verify critical files saved to Drive:
+import os
+base = "/content/drive/MyDrive/OCR/checkpoints"
+for f in ["ewc_state.pt", "stage2a_best.pt"]:
+    size = os.path.getsize(f"{base}/{f}") / 1e6
+    print(f"{f}: {size:.0f} MB")
+# ewc_state.pt should be ~600MB; stage2a_best.pt ~300MB
+```
+
+**Session 3 — Stage 2b (~3–4 hours):**
+
+```bash
+# Run setup cells first
+!python main.py --stage 2b --config config.yaml
+```
+
+### Full Pipeline (single session, if runtime allows)
+
+```bash
+%cd /content/trocr_viet
+!python main.py --stage all --config config.yaml
+```
+
+Active stages run sequentially: **1 → 2a → 2b**. Stage 3 is skipped automatically
+because `stage3.enabled: false` in config. Final model is saved to
+`checkpoint_dir/final_model/` in HuggingFace format **only** when using
+`--stage all`. If you run stages individually, see
+[Manual Final Model Export](#manual-final-model-export-after-early-stop-or-individual-stage-runs).
+
+### Resume After Colab Restart
+
+All stages auto-resume from the latest `.pt` checkpoint for that stage.
+Run the **same command** as before:
+
+```bash
+!python main.py --stage 2b --config config.yaml
+# Log will show: [Checkpoint] Resumed from stage2b_epoch_012.pt
+```
+
+EWC state is loaded automatically from `ewc_state.pt` inside `trainer.train_stage2b()`
+if the in-session EWC object is None. Stage 2b weights are loaded from `stage2a_best.pt`
+(or latest `stage2a_epoch_*.pt`) when no `stage2b_epoch_*.pt` exists — ensuring
+Stage 2a progress is never lost on Colab restart.
+
+### Manual Final Model Export (after early stop or individual stage runs)
+
+> [!IMPORTANT]
+> The automatic `final_model/` HuggingFace export **only runs with `--stage all`**
+> (see `main.py` line 972: `if run_all:`). If you ran stages individually
+> (`--stage 2b`) or manually early-stopped training, you must export the final
+> model manually using the cell below.
+
+**When to use this:**
+
+- You ran `--stage 2b` and training finished or you manually stopped it.
+- You want to export the best checkpoint (`stage2b_best.pt`) as a
+  HuggingFace-format model for inference.
+- You early-stopped before the configured epoch count and the pipeline
+  did not generate `final_model/`.
+
+**Colab cell — Final Model Export:**
+
+```python
+# =============================================================================
+# Manual Final Model Export — After Early-Stopped or Individual Stage 2b
+# =============================================================================
+# This cell replicates the exact model initialization from main.py::setup_model()
+# to ensure the exported model is identical to what the training pipeline produces.
+#
+# Prerequisites (run the standard setup cells from Section 5 first):
+#   - Google Drive is mounted
+#   - Code is copied to /content/trocr_viet/ (setup cell: cp -r .../code /content/trocr_viet)
+#   - requirements.txt dependencies are installed
+#   - stage2b_best.pt exists in checkpoint_dir on Google Drive
+#   - Vietnamese vocab file exists at the configured path on Google Drive
+# =============================================================================
+
+import os
+import sys
+import unicodedata
+
+import torch
+import yaml
+
+# ── 1. Load config ──────────────────────────────────────────────────────────
+CONFIG_PATH = "/content/trocr_viet/config.yaml"
+
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    cfg = yaml.safe_load(f)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"[Export] Device: {device}")
+
+# ── 2. Initialize model + processor (mirrors main.py::setup_model) ──────────
+from transformers import (
+    TrOCRProcessor,
+    VisionEncoderDecoderModel,
+    RobertaTokenizer,
+)
+
+model_name = cfg["model"]["pretrained_name"]
+vocab_file = cfg["paths"]["vocab_file"]
+
+# Step 2a: Use Slow Tokenizer (matches training — avoids tokenization drift)
+slow_tokenizer = RobertaTokenizer.from_pretrained(model_name)
+processor = TrOCRProcessor.from_pretrained(model_name)
+processor.tokenizer = slow_tokenizer
+
+# Step 2b: Disable processor's internal resize (we use resize_for_vit)
+processor.image_processor.do_resize = False
+processor.image_processor.do_normalize = True
+processor.image_processor.size = {
+    "height": cfg["model"]["image_height"],
+    "width":  cfg["model"]["image_width"],
+}
+
+model = VisionEncoderDecoderModel.from_pretrained(model_name)
+print(f"[Export] Base model: {model_name}")
+
+# ── 3. Add Vietnamese vocab tokens (NFC-normalized, matches training) ────────
+with open(vocab_file, "r", encoding="utf-8") as f:
+    raw_tokens = [
+        line.strip()
+        for line in f
+        if line.strip() and not line.startswith("#")
+    ]
+
+new_tokens = list(dict.fromkeys(
+    unicodedata.normalize("NFC", t) for t in raw_tokens
+))
+n_added = processor.tokenizer.add_tokens(new_tokens)
+print(f"[Export] Vocab: {len(new_tokens)} tokens | Newly added: {n_added}")
+
+if n_added > 0:
+    model.decoder.resize_token_embeddings(len(processor.tokenizer))
+    print(f"[Export] Decoder embeddings resized → {len(processor.tokenizer)}")
+
+# ── 4. Set special token IDs + generation config ────────────────────────────
+eos_id = processor.tokenizer.eos_token_id
+pad_id = processor.tokenizer.pad_token_id
+
+model.config.decoder_start_token_id = eos_id
+model.config.pad_token_id           = pad_id
+model.config.eos_token_id           = eos_id
+
+model.generation_config.decoder_start_token_id = eos_id
+model.generation_config.pad_token_id           = pad_id
+model.generation_config.eos_token_id           = eos_id
+model.generation_config.use_cache              = True
+model.generation_config.max_length           = cfg["model"]["max_target_length"]
+model.generation_config.length_penalty       = 1.0
+model.generation_config.num_beams            = 1
+
+# ── 5. Interpolate ViT positional embeddings (24×24 → 8×96) ─────────────────
+pos_embed   = model.encoder.embeddings.position_embeddings   # (1, 577, 768)
+cls_token   = pos_embed[:, :1, :]           # (1, 1, 768)
+patch_embed = pos_embed[:, 1:, :]           # (1, 576, 768)
+dim         = patch_embed.shape[-1]         # 768
+old_grid    = int(patch_embed.shape[1] ** 0.5)  # 24
+
+new_h = cfg["model"]["vit_h_patches"]       # 8
+new_w = cfg["model"]["vit_w_patches"]       # 96
+
+patch_embed = patch_embed.reshape(1, old_grid, old_grid, dim).permute(0, 3, 1, 2)
+patch_embed = torch.nn.functional.interpolate(
+    patch_embed.float(),
+    size=(new_h, new_w),
+    mode="bicubic",
+    align_corners=False,
+)
+patch_embed = patch_embed.permute(0, 2, 3, 1).reshape(1, -1, dim)
+new_pos_embed = torch.cat([cls_token.float(), patch_embed], dim=1)
+model.encoder.embeddings.position_embeddings = torch.nn.Parameter(new_pos_embed)
+
+new_image_size = (new_h * 16, new_w * 16)   # (128, 1536)
+model.encoder.config.image_size = new_image_size
+model.encoder.embeddings.patch_embeddings.image_size = new_image_size
+
+print(
+    f"[Export] ViT pos embed: ({old_grid}×{old_grid}) → ({new_h}×{new_w}) | "
+    f"image_size={new_image_size}"
+)
+
+# ── 6. Move to device + fix meta device tensors ─────────────────────────────
+model = model.to(device)
+
+for module in model.modules():
+    if module.__class__.__name__ == "TrOCRSinusoidalPositionalEmbedding":
+        if hasattr(module, "weights") and isinstance(module.weights, torch.Tensor):
+            n_pos, d = module.weights.shape
+            pad_idx = getattr(module, "padding_idx", None)
+            module.weights = module.get_embedding(n_pos, d, pad_idx).to(device)
+        if hasattr(module, "_float_tensor") and isinstance(
+            module._float_tensor, torch.Tensor
+        ):
+            module._float_tensor = torch.zeros(1, device=device)
+
+model.decoder.config.use_cache = True
+
+# ── 7. Load Stage 2b best checkpoint ────────────────────────────────────────
+ckpt_path = os.path.join(cfg["paths"]["checkpoint_dir"], "stage2b_best.pt")
+assert os.path.exists(ckpt_path), f"Checkpoint not found: {ckpt_path}"
+
+state = torch.load(ckpt_path, map_location=device)
+model.load_state_dict(state["model_state"])
+
+epoch   = state.get("epoch", "?")
+metrics = state.get("metrics", {})
+best_cer = state.get("best_cer", "?")
+print(f"[Export] Loaded: {ckpt_path}")
+print(f"[Export]   Epoch:    {epoch}")
+print(f"[Export]   Metrics:  {metrics}")
+print(f"[Export]   Best CER: {best_cer}")
+
+# ── 8. Export in HuggingFace format ──────────────────────────────────────────
+final_path = os.path.join(cfg["paths"]["checkpoint_dir"], "final_model")
+os.makedirs(final_path, exist_ok=True)
+
+model.save_pretrained(final_path)
+processor.save_pretrained(final_path)
+
+print(f"\n✅ Final model exported → {final_path}")
+for fname in sorted(os.listdir(final_path)):
+    fsize = os.path.getsize(os.path.join(final_path, fname)) / 1e6
+    print(f"  {fname}: {fsize:.1f} MB")
+
+# ── 9. Validation: reload and verify ────────────────────────────────────────
+print("\n── Validation: reloading exported model ──")
+test_model = VisionEncoderDecoderModel.from_pretrained(final_path).to(device)
+test_processor = TrOCRProcessor.from_pretrained(final_path)
+
+# Tokenizer round-trip check
+test_str  = unicodedata.normalize("NFC", "Đại học Tôn Đức Thắng")
+test_ids  = test_processor.tokenizer.encode(test_str, add_special_tokens=False)
+test_toks = test_processor.tokenizer.convert_ids_to_tokens(test_ids)
+print(f"  Tokenizer: '{test_str}' → {test_toks}")
+
+# Parameter count consistency
+enc_params = sum(p.numel() for p in test_model.encoder.parameters())
+dec_params = sum(p.numel() for p in test_model.decoder.parameters())
+print(f"  Encoder: {enc_params:,} params | Decoder: {dec_params:,} params")
+
+# Weight identity check (random layer)
+orig_w = list(model.parameters())[0].data.cpu()
+load_w = list(test_model.parameters())[0].data.cpu()
+assert torch.allclose(orig_w, load_w, atol=1e-6), "Weight mismatch after reload!"
+print(f"  Weight identity check: PASSED")
+
+print(f"\n✅ Validation passed — model is ready for inference.")
+print(f"   Path: {final_path}")
+```
+
+**Expected output:**
+
+```
+[Export] Device: cuda
+[Export] Base model: microsoft/trocr-base-stage1
+[Export] Vocab: 254 tokens | Newly added: 254
+[Export] Decoder embeddings resized → 50519
+[Export] ViT pos embed: (24×24) → (8×96) | image_size=(128, 1536)
+[Export] Loaded: /content/drive/MyDrive/OCR/checkpoints/stage2b_best.pt
+[Export]   Epoch:    12
+[Export]   Metrics:  {'printed_cer': ..., 'handwritten_cer': 0.1467, ...}
+[Export]   Best CER: 0.1467
+
+✅ Final model exported → /content/drive/MyDrive/OCR/checkpoints/final_model
+  config.json: 0.0 MB
+  model.safetensors: 580.2 MB
+  preprocessor_config.json: 0.0 MB
+  ...
+
+── Validation: reloading exported model ──
+  Tokenizer: 'Đại học Tôn Đức Thắng' → ['Đ', 'ạ', 'i', 'Ġ', 'h', 'ọ', 'c', ...]
+  Encoder: xxx params | Decoder: xxx params
+  Weight identity check: PASSED
+
+✅ Validation passed — model is ready for inference.
+```
+
+---
+
+## 10. Monitoring & Evaluation
+
+### Pre-flight Startup Checks (first 2 minutes of each session)
+
+Verify these log lines before letting training run unattended:
+
+```
+# 1. Correct GPU
+GPU: NVIDIA L4 | VRAM: 23.7 GB
+
+# 2. Correct base model loaded
+[Setup] Loading base model: microsoft/trocr-base-stage1
+
+# 3. Vietnamese vocab loaded correctly
+[Setup] Vocab file: 254 tokens | Newly added to tokenizer: 254
+
+# 4. Tokenizer produces single tokens per diacritic (not byte-fallback)
+[Setup] Tokenizer validation:
+  Input : Đại học Tôn Đức Thắng - TrOCR ặ ợ ướ
+  Tokens: ['Đ', 'ạ', 'i', 'Ġ', 'h', 'ọ', 'c', 'Ġ', ...]
+  # If tokens show <0x41>, â–, or multi-char sequences for Vietnamese chars
+  # → NFC mismatch between vocab file and LMDB. Rebuild vocab.
+
+# 5. Cross-attention is UNFROZEN from epoch 0 (intentional — freeze disabled)
+[Trainer] Decoder cross-attention: UNFROZEN
+# This is correct. See config.yaml freeze_decoder_until_phase: "none".
+# Earlier designs froze cross-attention in Phase 1A but this caused bos saturation.
+
+# 6. Curriculum phase transitions (expected epochs)
+[Curriculum] Phase advanced → phase_1b | word_ratio=0.50 | concat range=[3, 5]  ← epoch 5
+[Curriculum] Phase advanced → phase_1c | word_ratio=0.20 | concat range=[5, 7]  ← epoch 15
+```
+
+### Stage-by-Stage Monitoring Dashboard
+
+**Stage 1 — Watch per epoch:**
+
+| Metric | Healthy range | Alert condition | Action |
+|---|---|---|---|
+| `avg_loss` | Decreasing each epoch | Plateau after epoch 3 | Reduce `decoder_base` LR |
+| `printed_cer` (line val) | 30–60% | > 90% | Check LMDB path and data loading |
+| `handwritten_cer` (line val) | 45–75% | > 98% | Check tokenizer output |
+| Phase at epoch 5 | `phase_1b` in log | Missing phase advance | Check config key name |
+
+**Stage 2a — Watch per epoch:**
+
+| Metric | Healthy | Alert | Action |
+|---|---|---|---|
+| `printed_cer` | Decreasing, 5–15% by epoch 12 | > 30% at epoch 5 | Reduce LR or check LMDB |
+| `avg_loss` | 0.3–2.0, decreasing | NaN or sudden spike | Reduce LR, check fp16 |
+| `handwritten_cer` | 40–65% (expected — HW not seen yet) | — | Normal, no action needed |
+
+After Stage 2a completes, the log should confirm:
+
+```
+[EWC] Fisher computation complete. Batches used: 1000.
+[EWC] Mean Fisher magnitude: 0.000247
+```
+
+| Fisher magnitude | Interpretation | Action |
+|---|---|---|
+| 1e-5 ~ 1e-3 | Good | Proceed with Stage 2b |
+| < 1e-6 | Fisher near-zero; EWC will have no effect | Recompute with `fisher_samples: 500` |
+| > 1e-2 | Unusually large; possible gradient issue | Verify gradient checkpointing was enabled |
+
+**Stage 2b — Critical monitoring (check every ~30 minutes):**
+
+Log format every 50 batches:
+
+```
+[Stage2b] E5 step=945 | CE=0.8432 | EWC=12.341 | LR=4.99e-06
+[Stage2b] Smoothed HW CER (window=3): 0.2341
+[Eval] PRINTED     | CER=0.0912 | WER=0.2013
+[Eval] HANDWRITTEN | CER=0.2341 | WER=0.4812
+```
+
+| Metric | Healthy range | Alert | Action |
+|---|---|---|---|
+| CE loss | 0.5–2.0 | NaN | Stop; check fp16 settings |
+| EWC loss | 2–10× of CE | > 100× CE | Reduce lambda: 500 → 300 |
+| EWC loss | < 0.5 | EWC not protecting | Increase lambda: 500 → 800 |
+| `printed_cer` | Stay within +2% of Stage 2a best | Rise > 2% → early stop triggers | Increase lambda |
+| Smoothed HW CER | Decreasing epoch over epoch | Flat for 10 epochs | Decrease lambda |
+
+**EWC/CE ratio quick interpretation:**
+
+```
+EWC ≈ 0.1 × CE   → EWC too weak     → increase lambda
+EWC ≈ 2–10 × CE  → Good balance     ✓
+EWC ≈ 50 × CE    → EWC dominating   → decrease lambda
+```
+
+### CER Target Ranges by Stage
+
+| Stage end | Printed CER | HW CER |
+|---|---|---|
+| After Stage 1 | 30–60% | 45–75% |
+| After Stage 2a | 5–15% | 40–65% |
+| After Stage 2b | 7–18% | 15–35% |
+
+Printed CER worsening up to +2% from Stage 2a → Stage 2b end is acceptable.
+Beyond +2% means EWC lambda needs to be increased.
+
+### Parsing Logs Quickly
+
+```bash
+# CER trend across all epochs
+grep "Eval\].*CER" /content/drive/MyDrive/OCR/logs/training.log
+
+# Stage 2b loss trend (last 100 entries)
+grep "Stage2b.*CE=" /content/drive/MyDrive/OCR/logs/training.log | tail -100
+
+# EWC/CE ratio calculation
+python3 -c "
+import re
+with open('/content/drive/MyDrive/OCR/logs/training.log') as f:
+    for line in f:
+        m = re.search(r'CE=([\d.]+).*EWC=([\d.]+)', line)
+        if m:
+            ce, ewc = float(m.group(1)), float(m.group(2))
+            print(f'CE={ce:.3f} EWC={ewc:.3f} ratio={ewc/ce:.1f}x')
+" | tail -20
+
+# All warnings and errors
+grep "WARNING\|ERROR\|NaN\|OOM\|EARLY STOP" /content/drive/MyDrive/OCR/logs/training.log
+```
+
+---
+
+## 11. Checkpoint & Resume
+
+### Files on Drive
+
+```
+checkpoints/
+├── stage1_epoch_009.pt         ← (older deleted — keep_last_n_checkpoints=3)
+├── stage1_epoch_014.pt
+├── stage1_epoch_019.pt         ← latest Stage 1 checkpoint
+├── stage1_best.pt              ← best printed CER during Stage 1 (~300MB)
+│
+├── stage2a_epoch_008.pt
+├── stage2a_epoch_010.pt
+├── stage2a_best.pt             ← best printed_cer — EWC anchor point (~300MB)
+│
+├── stage2b_epoch_005.pt
+├── stage2b_epoch_010.pt
+├── stage2b_epoch_015.pt
+├── stage2b_best.pt             ← best HW CER (while printed CER in safety delta)
+├── stage2b_epoch_018_early_stop.pt   ← if early stopping triggered
+│
+├── ewc_state.pt                ← Fisher diagonal + theta* (~600MB) — CRITICAL
+│
+└── final_model/                ← HuggingFace format (--stage all or manual export)
+    ├── config.json
+    ├── model.safetensors        (or pytorch_model.bin)
+    ├── tokenizer.json
+    └── preprocessor_config.json
+```
+
+### Checkpoint Format
+
+Each `.pt` file contains:
+
+```python
+{
+    "stage":        "stage2b",
+    "epoch":        12,
+    "global_step":  18500,
+    "model_state":  model.state_dict(),
+    "optimizer":    optimizer.state_dict(),
+    "scheduler":    scheduler.state_dict(),
+    "scaler":       scaler.state_dict(),    # AMP GradScaler state
+    "metrics":      {"printed_cer": 0.091, "handwritten_cer": 0.234},
+    "best_cer":     0.0845,                 # Best printed CER so far (persists across restarts)
+}
+```
+
+The `ewc_state.pt` file stores Fisher diagonal and theta* separately because
+they are the same size as the full model's parameter set (~600MB total).
+
+### Drive Storage Budget
+
+| Files | Count | Size each | Subtotal |
+|---|---|---|---|
+| Stage rolling checkpoints (3 per stage × 3 stages) | 9 | ~300MB | ~2.7GB |
+| stage2a_best.pt | 1 | ~300MB | 0.3GB |
+| ewc_state.pt | 1 | ~600MB | 0.6GB |
+| final_model/ | 1 | ~600MB | 0.6GB |
+| **Total** | | | **~4.2GB** |
+
+Ensure at least **6GB free** on Google Drive before starting the full pipeline.
+
+---
+
+## 12. GPU Guide & Time Estimates
+
+### GPU Comparison (full training: Stage 1 + 2a + 2b)
+
+| GPU | VRAM | Train time | Eval time | Total | CU/hr | Total CU | Notes |
+|---|---|---|---|---|---|---|---|
+| **L4** | 24GB | ~5.9h | ~3.1h | **~9h** | 2.0 | **~22 CU** | Recommended |
+| A100 | 40GB | ~2.7h | ~1.4h | **~4.1h** | 3.5 | ~18 CU | Fastest; rare on Colab |
+| V100 | 16GB | ~8.9h | ~4.6h | **~13.5h** | 1.5 | ~23 CU | Not recommended |
+| T4 | 16GB | ~16.5h | ~8.5h | **~25h** | 0.5 | ~13 CU | Sanity testing only |
+
+All estimates include +20% buffer for restarts, LMDB copy (~10min/session),
+and Drive checkpoint saves.
+
+### Stage Breakdown on L4
+
+| Stage | Batches/epoch | Epochs | Train | Eval | Subtotal |
+|---|---|---|---|---|---|
+| Stage 1 | ~3,915 | 20 | ~3.3h | ~0.5h | ~3.8h |
+| Stage 2a | ~2,925 | 11 | ~1.5h | ~0.6h | ~2.1h |
+| Fisher computation | 1000 batches | — | ~45min | — | ~45min |
+| Stage 2b | ~1,663 | 25 | ~2.0h | ~1.3h | ~3.3h |
+| **Total** | | | **~7.0h** | **~2.4h** | **~9.9h** |
+
+### Pre-flight Checklist (before each session)
+
+```
+[ ] Google Drive mounted
+[ ] LMDB copied to /content/lmdb/ and verified with: du -sh /content/lmdb/*
+[ ] For Stage 2b only: ewc_state.pt exists on Drive (~600MB)
+[ ] Drive has at least 6GB free space
+[ ] Startup log shows: Decoder cross-attention UNFROZEN (freeze is disabled)
+[ ] Startup log shows: tokenizer produces single-char tokens (no byte-fallback)
+[ ] After Fisher: magnitude in 1e-5 ~ 1e-3 range
+```
+
+---
+
+## 13. Known Issues & Bug Log
+
+### [FIXED → DISABLED] Bug: Freeze Decoder Cross-Attention
+
+**File:** `core/trainer.py`, `config.yaml`
+**Original Symptom:** Cross-attention never frozen during Phase 1A due to string
+comparison mismatch (`"1b"` vs `"phase_1b"`).
+**Original Fix:** Corrected string comparison to use `"phase_1b"`.
+
+**Subsequent discovery:** Freezing cross-attention during Phase 1A caused
+position 1 (`input=[bos,bos]`) to saturate to bos prediction (prob=1.0) because
+the decoder had no image signal without cross-attention. By the time
+cross-attention was unfrozen at Phase 1B, the saturation was irreversible,
+producing all-zeros generation.
+
+**Final resolution:** `freeze_decoder_until_phase: "none"` in `config.yaml`.
+Cross-attention is **never frozen** in any phase. The original freeze logic
+remains in `trainer.py` but is bypassed by the `"none"` config value.
+
+---
+
+### [FIXED] Bug: Deprecated torch.cuda.amp API
+
+**File:** `core/trainer.py`
+**Symptom:** DeprecationWarning flood on PyTorch 2.x obscures real warnings.
+**Fix:** Replaced `torch.cuda.amp.GradScaler()` and `torch.cuda.amp.autocast()`
+with the non-deprecated `torch.amp.GradScaler("cuda")` and
+`torch.amp.autocast("cuda")`.
+
+---
+
+### [FIXED] Bug: EWC dummy_optimizer Memory ID Reuse
+
+**File:** `core/ewc.py`
+**Symptom:** `RuntimeError: unscale_ called after step` on the second Fisher batch.
+**Root cause:** Creating `torch.optim.SGD` inside the loop allowed Python's
+memory allocator to reuse the same memory address, confusing GradScaler's
+internal state tracker which uses object identity (memory address) as the key.
+**Fix:** Move `dummy_optimizer` instantiation outside the loop; add
+`scaler.update()` at the end of each batch; add `zero_grad(set_to_none=True)`
+and `del dummy_optimizer` after the loop.
+
+---
+
+### [FIXED] Bug: EWC FP16 Gradient NaN
+
+**File:** `core/ewc.py`
+**Symptom:** Fisher diagonal contains NaN; EWC loss = NaN throughout Stage 2b.
+**Root cause:** FP16 gradients can overflow when squared (FP16 max ~65504;
+squared gradients easily exceed this for weights with larger gradient norms).
+**Fix:**
+
+```python
+# BEFORE (overflow risk):
+self._fisher[name] += param.grad.data.pow(2)
+
+# AFTER (safe):
+grad_fp32 = param.grad.data.clone().to(torch.float32)
+self._fisher[name] += grad_fp32.pow(2)
+```
+
+---
+
+### [FIXED] Feature: NFC Unicode Normalization System-wide
+
+**Files:** `data/dataset.py` (`__getitem__`), `main.py` (`setup_model`)
+**Problem:** LMDB labels may be in NFD form (`ộ` = 3 codepoints) while
+vocabulary tokens are NFC (`ộ` = 1 codepoint). This mismatch causes the
+tokenizer to fall back to byte-level encoding for mismatched characters,
+producing CER > 90% from epoch 1 despite correct training.
+**Fix:** `unicodedata.normalize("NFC", label)` in `dataset.py :: __getitem__`;
+same normalization and deduplication applied to vocabulary tokens before
+`add_tokens()` in `setup_model()`. Startup validation log confirms correctness.
+
+---
+
+### [FIXED] Bug: LMDBDataset datatype-{idx} Key Reading
+
+**File:** `data/dataset.py`
+**Symptom:** KeyError or silent wrong data type assignment during Stage 1 training.
+**Root cause:** Earlier code attempted to read `datatype-000000000` keys from LMDB
+files. These keys do not exist in the exported LMDB files.
+**Fix:** Data type is now passed as `default_data_type` constructor parameter and
+returned verbatim in `__getitem__`. The caller (`main.py`) instantiates separate
+`LMDBDataset` objects per domain with the correct type.
+
+---
+
+### [KNOWN LIMITATION] HW Validation Set: 549 Samples
+
+Small sample size causes per-epoch HW CER to have high variance (~±2–3%).
+The 3-epoch sliding window in Stage 2b mitigates false early stops. Always
+use the smoothed value for decisions, not the raw per-epoch CER.
+
+---
+
+### [LATENT] Issue: paragraph_train Key Missing in Config
+
+**File:** `main.py :: build_stage3_loaders()`
+**Status:** Non-critical — Stage 3 is disabled. Will raise `KeyError` if
+`stage3.enabled: true` without adding `paragraph_train` / `paragraph_val`
+to `config.yaml → paths.lmdb`.
+**Resolution:** Add LMDB keys when paragraph LMDB is prepared.
+
+---
+
+### [FIXED] Bug: smart_resize Cropping Wide Text Lines
+
+**File:** `data/dataset.py`
+**Symptom:** Lines wider than AR=4.0 were right-cropped, destroying text data
+and causing hallucinations on long Vietnamese lines.
+**Fix:** Replaced `smart_resize` with `resize_for_vit` — a scale-to-fit approach
+that preserves all text within 128×1536 using median pixel padding.
+
+---
+
+### [FIXED] Bug: Stage 2a Not Loading Stage 1 Checkpoint
+
+**File:** `main.py`
+**Symptom:** Stage 2a started from base pretrained weights, wasting all Stage 1
+training progress.
+**Fix:** Stage 2a now loads `stage1_best.pt` (preferred) or falls back to the
+latest `stage1_epoch_*.pt` checkpoint before training begins.
+
+---
+
+### [FIXED] Bug: Generation Config Causing Hallucinations
+
+**File:** `main.py :: setup_model()`
+**Symptom:** Model produced repeated phrases and hallucinated text during eval.
+**Root cause:** `num_beams=4` + `no_repeat_ngram_size=3` conflicted with
+Vietnamese diacritics.
+**Fix:** Set `num_beams=1` (greedy), `length_penalty=1.0`, removed
+`no_repeat_ngram_size`.
+
+---
+
+### [FIXED] Bug: Bilinear → Bicubic ViT Positional Embedding Interpolation
+
+**File:** `main.py :: interpolate_vit_pos_embeddings()`
+**Change:** Replaced `reinitialize_high_positional_embeddings()` with bicubic
+interpolation from 24×24 → 8×96 patch grid for 128×1536 input. Bicubic
+provides C¹ smooth gradients, avoiding patch-boundary discontinuities.
+
+---
+
+### [FIXED] Bug: ViTImageProcessor Re-resizing to 384×384
+
+**File:** `main.py :: setup_model()`
+**Symptom:** All training images were silently re-resized to 384×384 by the
+`TrOCRProcessor`, overriding `resize_for_vit`.
+**Fix:** Set `processor.image_processor.do_resize = False` in `setup_model()`.
+
+---
+
+### [FIXED] Bug: ViTPatchEmbeddings.image_size Not Updated
+
+**File:** `main.py :: interpolate_vit_pos_embeddings()`
+**Symptom:** `ValueError: Input image size (128*1536) doesn't match model (384*384)`
+during forward pass.
+**Root cause:** `model.encoder.config.image_size` was updated but
+`model.encoder.embeddings.patch_embeddings.image_size` was still `(384, 384)`.
+**Fix:** Now updates both attributes in `interpolate_vit_pos_embeddings()`.
+
+---
+
+### [FIXED] Bug: Checkpoint Key Mismatch (model_state_dict → model_state)
+
+**File:** `main.py` (Stage 2a loading)
+**Symptom:** `KeyError: 'model_state_dict'` when loading Stage 1 checkpoint.
+**Fix:** All checkpoint save/load now consistently uses `model_state` key.
+
+---
+
+### [FIXED] Bug: best_cer Not Persisted Across Restarts
+
+**Files:** `core/trainer.py`, `main.py`
+**Symptom:** After Colab restart, `best_cer` reset to infinity, losing track
+of the best checkpoint.
+**Fix:** `best_cer` is now saved in every checkpoint dict and restored on resume.
+
+---
+
+### [FIXED] Bug: Stage 2b Not Loading Stage 2a Weights on Colab Restart
+
+**File:** `main.py`
+**Symptom:** Running `--stage 2b` after Colab restart started from base pretrained
+weights, not Stage 2a. All Stage 1 + 2a progress lost silently. EWC penalties
+computed against wrong anchor weights.
+**Fix:** Stage 2b now checks for existing `stage2b_epoch_*.pt` first. If none found,
+loads `stage2a_best.pt` (preferred) or latest `stage2a_epoch_*.pt` before training.
+Mirrors the Stage 2a→Stage 1 handoff logic.
+
+---
+
+### [FIXED] Bug: Double resize_for_vit on Pseudo-lines (Stage 1)
+
+**File:** `data/dataset.py`, `main.py`
+**Symptom:** Pseudo-line text quality degraded — text unnecessarily small with
+excessive padding. Slow Stage 1 convergence.
+**Root cause:** `LMDBDataset.__getitem__()` resized word images to 128×1536 (with
+padding) before returning. `CurriculumCollateFn` then downscaled these padded images
+to 64px height and re-concatenated — pseudo-lines were mostly padding.
+**Fix:** Added `keep_raw=True` parameter to `LMDBDataset` for handwritten words.
+`CurriculumCollateFn` now uses original-dimension `raw_image` for pseudo-line
+construction. Training transforms are applied to the assembled pseudo-line.
+
+---
+
+### [FIXED] Bug: Rotation Fill Color Mismatch on Dark Backgrounds
+
+**File:** `main.py`
+**Symptom:** White stripe artifacts at rotation edges on VinText scene-text images
+with dark backgrounds.
+**Root cause:** `T.RandomRotation(fill=255)` always used white fill, mismatching
+the median-pixel padding from `resize_for_vit()` on dark-background images.
+**Fix:** Replaced with `_MedianFillRotation` class that computes fill per-image
+from border pixel median, matching the actual padding color.
+
+---
+
+### [FIXED] Performance: Stage 1 Eval Frequency Too High
+
+**File:** `config.yaml`, `core/trainer.py`
+**Change:** Stage 1 now evaluates every 2 epochs (`stage1.eval_every_epochs: 2`)
+instead of every epoch. Saves ~30 min on L4. Stage 2a/2b still evaluate every epoch.
+
+---
+
+## 14. Design Decisions & Rationale
+
+### Why `trocr-base-stage1` and not `trocr-base-handwritten`?
+
+`trocr-base-handwritten` was fine-tuned on English IAM handwriting. Its RoBERTa
+decoder carries a strong English cursive N-gram prior baked into attention weights
+and positional embeddings. When we then fine-tune on Vietnamese printed text
+(Stage 2a), the decoder must fight two conflicting objectives simultaneously:
+unlearning English cursive patterns AND learning Vietnamese printed patterns.
+This produces training instability, slow convergence, and frequently results in
+mode collapse on long Vietnamese sequences with stacked diacritics.
+
+`trocr-base-stage1` is the IIT-CDIP checkpoint trained on document images with
+no language fine-tuning. It has a neutral prior — the encoder knows "text looks
+like this spatially" but the decoder has no language-specific N-gram bias. This
+is the correct foundation before Vietnamese-specific fine-tuning.
+
+### Why separate LMDB files per domain?
+
+LMDB does not natively support filtered reads (you cannot query "give me only
+handwritten samples"). Without physical separation, you must either: (a) scan
+the full LMDB at startup to build filtered index lists — slow and reads thousands
+of non-existent keys on a 150k+ sample database, or (b) embed domain metadata
+as a separate LMDB key — requires a schema change to the export script and adds
+per-sample overhead. Physical separation is O(1) startup, self-documenting,
+prevents cross-domain contamination in the DataLoader, and is required for
+`CurriculumCollateFn` to enforce Task-Mixing Isolation without reading metadata.
+
+### Why Task-Mixing Isolation instead of simple mixed concatenation?
+
+The original design concatenated random word pairs without regard to domain.
+VinText scene-text images have multi-color complex backgrounds with sharp
+brightness transitions at image borders (cropped from larger street photos).
+When two VinText crops are concatenated horizontally, the boundary between them
+is a hard vertical discontinuity in color, brightness, and texture spanning 1–2
+ViT patches — a strong spurious edge signal that has no counterpart in real text.
+The model learns this seam as a word boundary feature, degrading line-level CER.
+
+UIT-HWDB images are rendered against near-uniform white/cream paper. The
+`build_pseudo_line()` canvas is filled with the median pixel value of all source
+words, making seams visually seamless. Printed words are always passed as
+isolated samples and never concatenated.
+
+### Why EWC and not simpler regularization (L2, dropout)?
+
+L2 regularization (`weight_decay`) penalizes ALL weights equally regardless of
+importance. A weight might be critical for Vietnamese diacritic recognition but
+have a small absolute value — L2 would allow it to change freely. EWC weights
+the penalty by Fisher Information. Parameters that produce large gradient variance
+on the printed task (high Fisher = critical for printed OCR) are penalized heavily.
+Parameters with near-zero gradient variance on printed data can adapt freely for
+handwriting. This selective, importance-weighted protection is EWC's core advantage
+over uniform L2 regularization.
+
+### Why Bicubic Interpolation for ViT Positional Embeddings?
+
+The pre-trained 24×24 pos embedding grid must reshape to 8×96 — a highly
+asymmetric transformation (3:1 height compression, 1:4 width expansion).
+Bicubic interpolation provides C¹ smooth gradients across the new grid,
+avoiding patch-boundary discontinuities that bilinear interpolation creates.
+The smoothness helps ViT self-attention form correct spatial queries from
+the first training step. Any small overshoot from bicubic's ringing is
+immediately corrected during fine-tuning.
+
+---
+
+## Quick Reference — Hyperparameter Summary
+
+```yaml
+# L4 Production — config.yaml key values
+
+model:
+  pretrained_name:    "microsoft/trocr-base-stage1"
+  image_height:       128    # Rectangular ViT input (not 384×384 square)
+  image_width:        1536
+  vit_h_patches:      8      # 128 / 16
+  vit_w_patches:      96     # 1536 / 16
+  max_target_length:  256    # Increased from 128 for long Vietnamese lines
+
+data:
+  pseudo_line_height: 64     # Canvas height for build_pseudo_line()
+
+stage1:
+  epochs: 20,  batch_size: 32,  accumulation_steps: 4   # effective=128
+  lr.decoder_base: 1.0e-4,  warmup_steps: 1000
+  eval_every_epochs: 2      # Override global eval_every=1; saves ~30 min on L4
+  curriculum:
+    phase_1a: { epochs 0–4,   word_ratio: 1.0, concat: 2–3 words }
+    phase_1b: { epochs 5–14,  word_ratio: 0.5, concat: 3–5 words }
+    phase_1c: { epochs 15–19, word_ratio: 0.2, concat: 5–7 words }
+
+stage2a:
+  epochs: 11,  batch_size: 8,   accumulation_steps: 8   # effective=64
+  lr.decoder_base: 5.0e-5,  warmup_steps: 500
+  fisher_samples: 1000
+
+stage2b:
+  epochs: 25,  batch_size: 8,   accumulation_steps: 8   # effective=64
+  lr.decoder_base: 5.0e-6,  warmup_steps: 500
+  handwritten_ratio: 0.70,  printed_ratio: 0.30
+  replay_buffer_fraction: 0.15
+  ewc.lambda: 500.0          # tune range: 200–1000
+  early_stop_printed_cer_delta: 0.02   # 2 percentage points
+  cer_sliding_window: 3
+
+stage3:
+  enabled: false             # postponed — enable after paragraph LMDB ready
+```

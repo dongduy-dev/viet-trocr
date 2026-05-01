@@ -1,0 +1,62 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing> python scripts/03_filter_outliers.py
+03_filter_outliers.py
+Project root: C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing
+
+═══════════════════════════════════════════════════════
+WORD LEVEL
+═══════════════════════════════════════════════════════
+  Dimension filters: {'min_width': 10, 'min_height': 10, 'max_height': 300, 'min_aspect': 0.3, 'max_aspect': 25.0}
+  Language filter: non-Vietnamese character removal
+  Filtering word: 100%|██████████████████████████████████████████████████████| 153533/153533 [17:16<00:00, 148.19img/s]
+
+  → word: 149722 kept / 3811 removed
+    Kept by split:    train=122889  val=14656  test=12177
+    Removed by split: train=2390  val=649  test=772
+    Removal reasons:
+      dim:height_too_small: 2142
+      dim:width_too_small: 1188
+      dim:height_too_large: 380
+      dim:aspect_too_low: 101
+    → Saved: C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\processed\word\labels_filtered.csv
+
+═══════════════════════════════════════════════════════
+LINE LEVEL
+═══════════════════════════════════════════════════════
+  Dimension filters: {'min_width': 32, 'min_height': 16, 'max_height': 384, 'max_width': 3000, 'min_aspect': 1.0}
+  Language filter: non-Vietnamese character removal
+  Filtering line: 100%|████████████████████████████████████████████████████████| 68845/68845 [07:37<00:00, 150.56img/s]
+
+  → line: 68303 kept / 542 removed
+    Kept by split:    train=58393  val=5433  test=4477
+    Removed by split: train=458  val=68  test=16
+    Removal reasons:
+      dim:height_too_large: 313
+      dim:height_too_small: 134
+      dim:width_too_small: 49
+      non_vietnamese (CJK): 34
+      dim:aspect_too_low: 1
+      non_vietnamese (U+2606): 1
+      non_vietnamese (Japanese): 1
+      non_vietnamese (U+02DA): 1
+      non_vietnamese (CJK+U+2466D+U+296C4): 1
+      non_vietnamese (U+2C5BE): 1
+      non_vietnamese (CJK+Fullwidth+U+3001+U+3002): 1
+      non_vietnamese (Khmer): 1
+      non_vietnamese (IPA+Khmer+U+02D0): 1
+      non_vietnamese (CJK+Fullwidth): 1
+      non_vietnamese (IPA+Khmer+U+02B0+U+02D0): 1
+      non_vietnamese (Cyrillic): 1
+    Non-Vietnamese by source:
+      synth_modern: 43 labels removed
+      anyuuus: 2 labels removed
+    → Saved: C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\processed\line\labels_filtered.csv
+
+[DONE]
+  Bước tiếp theo: python scripts/04_export_lmdb.py
+  (04_export_lmdb.py sẽ tự động dùng labels_filtered.csv nếu có)
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing>

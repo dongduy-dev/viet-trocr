@@ -1,0 +1,92 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing> python scripts/01_parse_all_datasets.py all
+01_parse_all_datasets.py  |  target=all
+Project root : C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing
+RAW_HW       : C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\raw_data\HandWritten
+RAW_PT       : C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\raw_data\Printed
+
+[CLEANUP] Xóa labels_master.csv cũ...
+
+═══════════════════════════════════════════════════════
+[HW 1/3] UIT_HWDB
+═══════════════════════════════════════════════════════
+  UIT_HWDB_word/train_data: 100%|████████████████████████████████████████████████| 249/249 [05:58<00:00,  1.44s/writer]
+  UIT_HWDB_word/test_data: 100%|█████████████████████████████████████████████████████| 6/6 [00:08<00:00,  1.47s/writer]
+  → 110488 mẫu  →  processed/word/labels_master.csv
+  UIT_HWDB_line/train_data: 100%|████████████████████████████████████████████████| 249/249 [04:00<00:00,  1.03writer/s]
+  UIT_HWDB_line/test_data: 100%|█████████████████████████████████████████████████████| 6/6 [00:08<00:00,  1.44s/writer]
+  → 7229 mẫu  →  processed/line/labels_master.csv
+  UIT_HWDB_paragraph/train_data: 100%|███████████████████████████████████████████| 249/249 [02:06<00:00,  1.97writer/s]
+  UIT_HWDB_paragraph/test_data: 100%|████████████████████████████████████████████████| 6/6 [00:03<00:00,  1.70writer/s]
+  → 1144 mẫu  →  processed/paragraph/labels_master.csv
+
+═══════════════════════════════════════════════════════
+[HW 2/3] CINNAMON AI DATASET  (line)
+═══════════════════════════════════════════════════════
+  Data1: 100%|████████████████████████████████████████████████████████████████████████| 15/15 [00:00<00:00, 16.64img/s]
+    Data1: 15 mẫu  (pre_split='val')
+  Data2: 100%|████████████████████████████████████████████████████████████████████| 1823/1823 [00:44<00:00, 41.34img/s]
+    Data2: 1823 mẫu  (pre_split='train')
+  Private_Test: 100%|███████████████████████████████████████████████████████████████| 549/549 [00:08<00:00, 65.77img/s]
+    Private_Test: 549 mẫu  (pre_split='test')
+  → 2387 mẫu  →  processed/line/labels_master.csv
+
+═══════════════════════════════════════════════════════
+[HW 3/3] VIET_WIKI  (paragraph - synthetic)
+═══════════════════════════════════════════════════════
+  viet_wiki: 100%|████████████████████████████████████████████████████████████████| 5796/5796 [02:31<00:00, 38.16img/s]
+  → 5796 mẫu  →  processed/paragraph/labels_master.csv
+
+═══════════════════════════════════════════════════════
+[PT 1/3] VINTEXT  (word - printed)
+═══════════════════════════════════════════════════════
+  train_images: 100%|██████████████████████████████████████████████████████████| 25794/25794 [01:25<00:00, 302.06img/s]
+    train_images: 25776 mẫu  (pre_split='train')
+  test_image: 100%|██████████████████████████████████████████████████████████████| 7220/7220 [00:24<00:00, 290.25img/s]
+    test_image: 7201 mẫu  (pre_split='val')
+  unseen_test_images: 100%|████████████████████████████████████████████████████| 10086/10086 [00:33<00:00, 298.93img/s]
+    unseen_test_images: 10068 mẫu  (pre_split='test')
+  → 43045 mẫu  →  processed/word/labels_master.csv
+
+═══════════════════════════════════════════════════════
+[PT 2/3] MC_OCR 2021  (line - printed)
+═══════════════════════════════════════════════════════
+  text_recognition_train_data.txt: 100%|█████████████████████████████████████████| 5285/5285 [00:14<00:00, 355.37img/s]
+    text_recognition_train_data.txt: 5285 mẫu  (pre_split='train')
+  text_recognition_val_data.txt: 100%|███████████████████████████████████████████| 1300/1300 [00:03<00:00, 356.50img/s]
+    text_recognition_val_data.txt: 1300 mẫu  (pre_split='val')
+  → 6585 mẫu  →  processed/line/labels_master.csv
+
+═══════════════════════════════════════════════════════
+[PT 3/3] ANYUUUS - PaddleOCR  (line - printed)
+═══════════════════════════════════════════════════════
+  Anyuuus doc folders: 100%|█████████████████████████████████████████████████████████| 4/4 [02:32<00:00, 38.08s/folder]
+  → 22644 mẫu  →  processed/line/labels_master.csv
+
+═══════════════════════════════════════════════════════
+[PT 4/4] SYNTHETIC MODERN  (line - printed)
+═══════════════════════════════════════════════════════
+  Synthetic_Modern: 100%|██████████████████████████████████████████████████████| 30000/30000 [02:57<00:00, 169.06img/s]
+  → 30000 mẫu  →  processed/line/labels_master.csv
+
+[VOCAB] 410 ký tự duy nhất -> C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\vocab\vietnamese_vocab.txt
+
+═══════════════════════════════════════════════════════
+TỔNG KẾT
+═══════════════════════════════════════════════════════
+  OK (đã lưu)  : 229318
+  Skip label   : 55
+  Skip image   : 5660
+  Ảnh hỏng     : 0
+
+  Output:
+    processed/word/labels_master.csv : 153533 dòng  (HW=110488, PT=43045)
+    processed/line/labels_master.csv : 68845 dòng  (HW=9616, PT=59229)
+    processed/paragraph/labels_master.csv : 6940 dòng  (HW=6940, PT=0)
+
+  Bước tiếp theo: python scripts/02_split.py
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing>

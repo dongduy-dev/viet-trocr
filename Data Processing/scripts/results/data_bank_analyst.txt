@@ -1,0 +1,204 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing> python scripts\06_source_based_analysis.py
+06_source_based_analysis.py
+Project root: C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing
+
+
+═════════════════════════════════════════════════════════════════
+DETAILED ANALYSIS BY SOURCE: WORD LEVEL
+═════════════════════════════════════════════════════════════════
+  Scanning word: 100%|██████████████████████████████████████████████████████| 149722/149722 [01:14<00:00, 2012.20img/s]
+
+[SOURCE: UIT_WORD] - Total: 110407 images
+  --- Width Distribution ---
+    [   0 ->    9] px :      0 imgs ( 0.00%)
+    [  10 ->   31] px :      0 imgs ( 0.00%)
+    [  32 ->   63] px :      0 imgs ( 0.00%)
+    [  64 ->  127] px :      0 imgs ( 0.00%)
+    [ 128 ->  255] px : 110407 imgs (100.00%)
+    [ 256 ->  511] px :      0 imgs ( 0.00%)
+    [ 512 -> 1023] px :      0 imgs ( 0.00%)
+    >= 1024 px        :      0 imgs ( 0.00%)
+  --- Height Distribution ---
+    [   0 ->    9] px :      0 imgs ( 0.00%)
+    [  10 ->   31] px :     26 imgs ( 0.02%)
+    [  32 ->   63] px :   9985 imgs ( 9.04%)
+    [  64 ->   95] px :  49381 imgs (44.73%)
+    [  96 ->  127] px :  35336 imgs (32.01%)
+    [ 128 ->  159] px :  10884 imgs ( 9.86%)
+    >=  160 px        :   4795 imgs ( 4.34%)
+
+[SOURCE: VINTEXT] - Total: 39315 images
+  --- Width Distribution ---
+    [   0 ->    9] px :      0 imgs ( 0.00%)
+    [  10 ->   31] px :  11255 imgs (28.63%)
+    [  32 ->   63] px :  12202 imgs (31.04%)
+    [  64 ->  127] px :   9189 imgs (23.37%)
+    [ 128 ->  255] px :   4602 imgs (11.71%)
+    [ 256 ->  511] px :   1740 imgs ( 4.43%)
+    [ 512 -> 1023] px :    307 imgs ( 0.78%)
+    >= 1024 px        :     20 imgs ( 0.05%)
+  --- Height Distribution ---
+    [   0 ->    9] px :      0 imgs ( 0.00%)
+    [  10 ->   31] px :  21179 imgs (53.87%)
+    [  32 ->   63] px :  10781 imgs (27.42%)
+    [  64 ->   95] px :   3622 imgs ( 9.21%)
+    [  96 ->  127] px :   1696 imgs ( 4.31%)
+    [ 128 ->  159] px :    883 imgs ( 2.25%)
+    >=  160 px        :   1154 imgs ( 2.94%)
+
+  → Outlier report saved to: C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\reports\outliers_report_word.txt
+
+═════════════════════════════════════════════════════════════════
+DETAILED ANALYSIS BY SOURCE: LINE LEVEL
+═════════════════════════════════════════════════════════════════
+  Scanning line: 100%|████████████████████████████████████████████████████████| 68303/68303 [00:42<00:00, 1617.80img/s]
+
+[SOURCE: ANYUUUS] - Total: 22641 images
+  --- Width Distribution ---
+    [   0 ->   49] px :      0 imgs ( 0.00%)
+    [  50 ->  255] px :    863 imgs ( 3.81%)
+    [ 256 ->  511] px :   1513 imgs ( 6.68%)
+    [ 512 -> 1023] px :   3178 imgs (14.04%)
+    [1024 -> 1535] px :  15086 imgs (66.63%)
+    [1536 -> 2047] px :   2001 imgs ( 8.84%)
+    [2048 -> 2499] px :      0 imgs ( 0.00%)
+    >= 2500 px        :      0 imgs ( 0.00%)
+  --- Height Distribution ---
+    [   0 ->   15] px :      0 imgs ( 0.00%)
+    [  16 ->   31] px :      1 imgs ( 0.00%)
+    [  32 ->   63] px :  21037 imgs (92.92%)
+    [  64 ->   95] px :   1595 imgs ( 7.04%)
+    [  96 ->  127] px :      8 imgs ( 0.04%)
+    [ 128 ->  159] px :      0 imgs ( 0.00%)
+    [ 160 ->  255] px :      0 imgs ( 0.00%)
+    >=  256 px        :      0 imgs ( 0.00%)
+
+[SOURCE: CINNAMON_D1] - Total: 15 images
+  --- Width Distribution ---
+    [   0 ->   49] px :      0 imgs ( 0.00%)
+    [  50 ->  255] px :      0 imgs ( 0.00%)
+    [ 256 ->  511] px :      0 imgs ( 0.00%)
+    [ 512 -> 1023] px :      1 imgs ( 6.67%)
+    [1024 -> 1535] px :      1 imgs ( 6.67%)
+    [1536 -> 2047] px :      5 imgs (33.33%)
+    [2048 -> 2499] px :      3 imgs (20.00%)
+    >= 2500 px        :      5 imgs (33.33%)
+  --- Height Distribution ---
+    [   0 ->   15] px :      0 imgs ( 0.00%)
+    [  16 ->   31] px :      0 imgs ( 0.00%)
+    [  32 ->   63] px :      0 imgs ( 0.00%)
+    [  64 ->   95] px :      0 imgs ( 0.00%)
+    [  96 ->  127] px :      0 imgs ( 0.00%)
+    [ 128 ->  159] px :      2 imgs (13.33%)
+    [ 160 ->  255] px :      7 imgs (46.67%)
+    >=  256 px        :      6 imgs (40.00%)
+
+[SOURCE: CINNAMON_D2] - Total: 1823 images
+  --- Width Distribution ---
+    [   0 ->   49] px :      0 imgs ( 0.00%)
+    [  50 ->  255] px :      0 imgs ( 0.00%)
+    [ 256 ->  511] px :      0 imgs ( 0.00%)
+    [ 512 -> 1023] px :      0 imgs ( 0.00%)
+    [1024 -> 1535] px :      0 imgs ( 0.00%)
+    [1536 -> 2047] px :   1823 imgs (100.00%)
+    [2048 -> 2499] px :      0 imgs ( 0.00%)
+    >= 2500 px        :      0 imgs ( 0.00%)
+  --- Height Distribution ---
+    [   0 ->   15] px :      0 imgs ( 0.00%)
+    [  16 ->   31] px :      0 imgs ( 0.00%)
+    [  32 ->   63] px :      0 imgs ( 0.00%)
+    [  64 ->   95] px :     11 imgs ( 0.60%)
+    [  96 ->  127] px :   1812 imgs (99.40%)
+    [ 128 ->  159] px :      0 imgs ( 0.00%)
+    [ 160 ->  255] px :      0 imgs ( 0.00%)
+    >=  256 px        :      0 imgs ( 0.00%)
+
+[SOURCE: CINNAMON_PT] - Total: 549 images
+  --- Width Distribution ---
+    [   0 ->   49] px :      0 imgs ( 0.00%)
+    [  50 ->  255] px :      0 imgs ( 0.00%)
+    [ 256 ->  511] px :      0 imgs ( 0.00%)
+    [ 512 -> 1023] px :      0 imgs ( 0.00%)
+    [1024 -> 1535] px :      0 imgs ( 0.00%)
+    [1536 -> 2047] px :    549 imgs (100.00%)
+    [2048 -> 2499] px :      0 imgs ( 0.00%)
+    >= 2500 px        :      0 imgs ( 0.00%)
+  --- Height Distribution ---
+    [   0 ->   15] px :      0 imgs ( 0.00%)
+    [  16 ->   31] px :      0 imgs ( 0.00%)
+    [  32 ->   63] px :      0 imgs ( 0.00%)
+    [  64 ->   95] px :     62 imgs (11.29%)
+    [  96 ->  127] px :    487 imgs (88.71%)
+    [ 128 ->  159] px :      0 imgs ( 0.00%)
+    [ 160 ->  255] px :      0 imgs ( 0.00%)
+    >=  256 px        :      0 imgs ( 0.00%)
+
+[SOURCE: MCOCR] - Total: 6401 images
+  --- Width Distribution ---
+    [   0 ->   49] px :    117 imgs ( 1.83%)
+    [  50 ->  255] px :   5011 imgs (78.28%)
+    [ 256 ->  511] px :   1166 imgs (18.22%)
+    [ 512 -> 1023] px :    107 imgs ( 1.67%)
+    [1024 -> 1535] px :      0 imgs ( 0.00%)
+    [1536 -> 2047] px :      0 imgs ( 0.00%)
+    [2048 -> 2499] px :      0 imgs ( 0.00%)
+    >= 2500 px        :      0 imgs ( 0.00%)
+  --- Height Distribution ---
+    [   0 ->   15] px :      0 imgs ( 0.00%)
+    [  16 ->   31] px :   4621 imgs (72.19%)
+    [  32 ->   63] px :   1710 imgs (26.71%)
+    [  64 ->   95] px :     51 imgs ( 0.80%)
+    [  96 ->  127] px :     14 imgs ( 0.22%)
+    [ 128 ->  159] px :      5 imgs ( 0.08%)
+    [ 160 ->  255] px :      0 imgs ( 0.00%)
+    >=  256 px        :      0 imgs ( 0.00%)
+
+[SOURCE: SYNTH_MODERN] - Total: 29957 images
+  --- Width Distribution ---
+    [   0 ->   49] px :      0 imgs ( 0.00%)
+    [  50 ->  255] px :    569 imgs ( 1.90%)
+    [ 256 ->  511] px :   3562 imgs (11.89%)
+    [ 512 -> 1023] px :   9412 imgs (31.42%)
+    [1024 -> 1535] px :  15223 imgs (50.82%)
+    [1536 -> 2047] px :   1191 imgs ( 3.98%)
+    [2048 -> 2499] px :      0 imgs ( 0.00%)
+    >= 2500 px        :      0 imgs ( 0.00%)
+  --- Height Distribution ---
+    [   0 ->   15] px :      0 imgs ( 0.00%)
+    [  16 ->   31] px :      0 imgs ( 0.00%)
+    [  32 ->   63] px :      0 imgs ( 0.00%)
+    [  64 ->   95] px :  29957 imgs (100.00%)
+    [  96 ->  127] px :      0 imgs ( 0.00%)
+    [ 128 ->  159] px :      0 imgs ( 0.00%)
+    [ 160 ->  255] px :      0 imgs ( 0.00%)
+    >=  256 px        :      0 imgs ( 0.00%)
+
+[SOURCE: UIT_LINE] - Total: 6917 images
+  --- Width Distribution ---
+    [   0 ->   49] px :      0 imgs ( 0.00%)
+    [  50 ->  255] px :      0 imgs ( 0.00%)
+    [ 256 ->  511] px :      0 imgs ( 0.00%)
+    [ 512 -> 1023] px :      0 imgs ( 0.00%)
+    [1024 -> 1535] px :      0 imgs ( 0.00%)
+    [1536 -> 2047] px :      0 imgs ( 0.00%)
+    [2048 -> 2499] px :   6917 imgs (100.00%)
+    >= 2500 px        :      0 imgs ( 0.00%)
+  --- Height Distribution ---
+    [   0 ->   15] px :      0 imgs ( 0.00%)
+    [  16 ->   31] px :      0 imgs ( 0.00%)
+    [  32 ->   63] px :      0 imgs ( 0.00%)
+    [  64 ->   95] px :     33 imgs ( 0.48%)
+    [  96 ->  127] px :   1228 imgs (17.75%)
+    [ 128 ->  159] px :   3032 imgs (43.83%)
+    [ 160 ->  255] px :   2310 imgs (33.40%)
+    >=  256 px        :    314 imgs ( 4.54%)
+
+  → Outlier report saved to: C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\reports\outliers_report_line.txt
+
+[COMPLETE]
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing>

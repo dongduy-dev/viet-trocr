@@ -1,0 +1,77 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing> python scripts/02_split.py
+02_split.py  |  random_seed = 42
+Project root : C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing
+
+
+───────────────────────────────────────────────────────
+Level: WORD
+───────────────────────────────────────────────────────
+  Tổng mẫu: 153533
+  Phân loại: 100%|███████████████████████████████████████████████████████| 153533/153533 [00:00<00:00, 1650178.68row/s]
+
+  Kết quả split:
+    train : 125279
+    val   : 15305
+    test  : 12949
+
+  Chi tiết theo source:
+    uit_word               train= 99503  val= 8104  test= 2881
+    vintext                train= 25776  val= 7201  test=10068
+
+  Chi tiết theo data_type:
+    handwritten     train= 99503  val= 8104  test= 2881
+    printed         train= 25776  val= 7201  test=10068
+  → Đã lưu: C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\processed\word\labels_split.csv  (153533 dòng)
+
+───────────────────────────────────────────────────────
+Level: LINE
+───────────────────────────────────────────────────────
+  Tổng mẫu: 68845
+  Phân loại: 100%|█████████████████████████████████████████████████████████| 68845/68845 [00:00<00:00, 2874089.11row/s]
+
+  Kết quả split:
+    train : 58851
+    val   : 5501
+    test  : 4493
+
+  Chi tiết theo source:
+    anyuuus                train= 18249  val= 2152  test= 2243
+    cinnamon_d1            train=     0  val=   15  test=    0
+    cinnamon_d2            train=  1823  val=    0  test=    0
+    cinnamon_pt            train=     0  val=    0  test=  549
+    mcocr                  train=  5285  val= 1300  test=    0
+    synth_modern           train= 27000  val= 1500  test= 1500
+    uit_line               train=  6494  val=  534  test=  201
+
+  Chi tiết theo data_type:
+    handwritten     train=  8317  val=  549  test=  750
+    printed         train= 50534  val= 4952  test= 3743
+  → Đã lưu: C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\processed\line\labels_split.csv  (68845 dòng)
+
+───────────────────────────────────────────────────────
+Level: PARAGRAPH
+───────────────────────────────────────────────────────
+  Tổng mẫu: 6940
+  Phân loại: 100%|███████████████████████████████████████████████████████████| 6940/6940 [00:00<00:00, 3087449.06row/s]
+
+  Kết quả split:
+    train : 5665
+    val   : 664
+    test  : 611
+
+  Chi tiết theo source:
+    uit_paragraph          train=  1029  val=   84  test=   31
+    viet_wiki              train=  4636  val=  580  test=  580
+
+  Chi tiết theo data_type:
+    handwritten     train=  5665  val=  664  test=  611
+  → Đã lưu: C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing\processed\paragraph\labels_split.csv  (6940 dòng)
+
+[HOÀN THÀNH]
+  Bước tiếp theo: python scripts/03_filter_outliers.py
+PS C:\Users\huynh\OneDrive\Desktop\OCR\Data Processing>

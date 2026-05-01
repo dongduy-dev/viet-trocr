@@ -1,0 +1,6 @@
+pip install Pillow tqdm scikit-learn lmdb
+
+python scripts/01_parse_all_datasets.py all
+python scripts/02_split.py
+python scripts/03_filter_outliers.py
+python scripts/04_export_lmdb.py

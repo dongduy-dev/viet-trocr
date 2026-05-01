@@ -1,0 +1,208 @@
+# =============================================================================
+# TrOCR Vietnamese Multi-modal Training — Master Configuration
+# =============================================================================
+#
+# BUG FIXES applied in this version:
+#
+#  [FIX-1] pretrained_name: trocr-base-handwritten → trocr-base-stage1
+#          trocr-base-handwritten was fine-tuned on English IAM cursive data.
+#          Its decoder carries a strong English cursive N-gram prior that
+#          causes Catastrophic Interference when we fine-tune on Vietnamese
+#          printed text in Stage 2a. trocr-base-stage1 is the IIT-CDIP
+#          pre-trained base with no language/modal bias — the correct
+#          starting point before task-specific fine-tuning.
+#
+#  [FIX-2] word_train split into two physically separate LMDB paths:
+#            word_printed_train    → VinText scene text (printed domain)
+#            word_handwritten_train → UIT-HWDB offline HW (handwritten domain)
+#          Physical separation is required so CurriculumCollateFn can enforce
+#          Task-Mixing Isolation: printed words are NEVER concatenated into
+#          pseudo-lines (avoids seam artifacts from complex scene backgrounds).
+#
+#  [FIX-3] Resolution migrated from 384×384 square to 128×1536 rectangular.
+#          smart_resize (which cropped AR > 4.0) replaced by resize_for_vit
+#          (scale-to-fit, never crops). Pre-trained 24×24 ViT positional
+#          embeddings are bicubic-interpolated to 8×96 at model init.
+#          This matches the actual data distribution: heights 32–128px,
+#          widths up to ~2000px.
+# =============================================================================
+
+# ─── Paths ────────────────────────────────────────────────────────────────────
+paths:
+  gdrive_lmdb_root: "/content/drive/MyDrive/OCR/lmdb"
+  local_lmdb_root:  "/content/lmdb"          # Local Colab SSD — avoids Drive I/O
+  vocab_file:       "/content/drive/MyDrive/OCR/vocab/vietnamese_vocab.txt"
+  checkpoint_dir:   "/content/drive/MyDrive/OCR/checkpoints"
+  log_dir:          "/content/drive/MyDrive/OCR/logs"
+
+  # All sub-paths are relative to local_lmdb_root.
+  # Word and Line data are physically separated by domain so the DataLoader
+  # can attach the correct default_data_type without reading LMDB metadata keys.
+  # Stage 3 (paragraph) is disabled — those paths are omitted intentionally.
+  lmdb:
+    word_printed_train:     "word_printed/train"      # VinText scene-text words
+    word_handwritten_train: "word_handwritten/train"  # UIT-HWDB offline HW words
+
+    line_printed_train:     "line_printed/train"      # anyuuus + MC_OCR printed lines
+    line_printed_val:       "line_printed/val"         # Printed-only validation set
+
+    line_handwritten_train: "line_handwritten/train"  # UIT-HWDB + Cinnamon HW lines
+    line_handwritten_val:   "line_handwritten/val"    # Handwritten-only validation set
+
+# ─── Model ────────────────────────────────────────────────────────────────────
+model:
+  # [FIX-1] Correct base model: no language/modal prior.
+  pretrained_name:    "microsoft/trocr-base-stage1"
+
+  # Rectangular ViT input: 128×1536 (replaces 384×384 square).
+  # Matches the actual data distribution: heights 32–128px, widths up to ~2000px.
+  # Pre-trained 24×24 pos embeddings are interpolated to 8×96 at model init.
+  image_height:       128    # ViT input height after resize_for_vit
+  image_width:        1536   # ViT input width after resize_for_vit
+  vit_h_patches:      8      # 128 / 16 = 8 patch rows
+  vit_w_patches:      96     # 1536 / 16 = 96 patch columns
+  max_target_length:  256    # Decoder max output token length (increased for lines)
+
+# ─── Data ─────────────────────────────────────────────────────────────────────
+data:
+  # No max_aspect_ratio needed: resize_for_vit scales to fit, never crops.
+
+  # Height (px) of the pseudo-line canvas in build_pseudo_line().
+  # Word images are rescaled to this height before horizontal concatenation.
+  pseudo_line_height: 64
+
+# ─── Stage 1: Curriculum Word → Pseudo-line ───────────────────────────────────
+stage1:
+  epochs: 20
+  batch_size: 32
+  accumulation_steps: 4      # Effective batch = 32 × 4 = 128
+  num_workers: 4
+  eval_every_epochs: 2        # Override global eval_every=1; saves ~45 min on L4
+
+  # Curriculum phases — THREE key behavioral rules:
+  #
+  #   RULE 1 (Task-Mixing Isolation — always active):
+  #     printed_pool samples are ALWAYS passed through as isolated single words.
+  #     No concatenation ever, regardless of phase. Scene-text backgrounds
+  #     from VinText create hard seam artifacts if naively concatenated.
+  #
+  #   RULE 2 (Handwritten curriculum — controlled by word_ratio):
+  #     word_ratio controls what fraction of handwritten_pool samples remain
+  #     as isolated words. The remainder are concatenated into pseudo-lines.
+  #
+  #   RULE 3 (Concatenation range):
+  #     concat_min/concat_max set how many HW words are fused per pseudo-line.
+  #
+  # Phase 1A (epochs 0–4):  word_ratio=1.0 → ALL HW words are isolated.
+  #   Purpose: ViT learns clean character-level visual features without
+  #   sequence pressure. Decoder cross-attention is frozen at this phase.
+  #
+  # Phase 1B (epochs 5–14): word_ratio=0.5 → 50% HW words stay isolated,
+  #   50% are concatenated into 3–5 word pseudo-lines (~7–15 token sequences).
+  #   Purpose: Bridge phase — Decoder starts calibrating positional embeddings
+  #   for medium-length sequences. Cross-attention unfrozen here.
+  #
+  # Phase 1C (epochs 15–19): word_ratio=0.2 → 80% HW words are concatenated
+  #   into 5–7 word pseudo-lines (~15–25 token sequences, near real line length).
+  #   Purpose: Full positional embedding calibration before Stage 2 line data.
+  curriculum:
+    phase_1a: { start: 0,  end: 5,  word_ratio: 1.0, concat_min: 2, concat_max: 3 }
+    phase_1b: { start: 5,  end: 15, word_ratio: 0.5, concat_min: 3, concat_max: 5 }
+    phase_1c: { start: 15, end: 20, word_ratio: 0.2, concat_min: 5, concat_max: 7 }
+
+  # Parameters passed to build_pseudo_line() — handwritten pool only
+  pseudo_line:
+    spacing_min:     8    # Min horizontal gap (px) between consecutive words
+    spacing_max:    24    # Max horizontal gap (natural inter-word spacing variation)
+    vertical_jitter: 3   # ±px vertical baseline shift per word (simulates slant)
+
+  # LLRD for Stage 1
+  lr:
+    decoder_base:           1.0e-4
+    encoder_top_multiplier: 0.3    # Encoder layers encoder_split_layer .. 11
+    encoder_low_multiplier: 0.1    # Encoder layers 0 .. encoder_split_layer-1
+    encoder_split_layer:    6
+  warmup_steps: 1000
+
+  # Cross-attention freeze: DISABLED.
+  # Previously set to "phase_1b" which froze cross-attention during Phase 1A.
+  # This caused position 1 (input=[bos,bos]) to saturate to bos prediction
+  # (prob=1.0) because it had no image access without cross-attention.
+  # By Phase 1B, the saturation was irreversible → all-zeros generation.
+  freeze_decoder_until_phase: "none"
+
+# ─── Stage 2a: Printed Line Fine-tuning ───────────────────────────────────────
+stage2a:
+  epochs: 11
+  batch_size: 8
+  accumulation_steps: 8
+  num_workers: 4
+
+  lr:
+    decoder_base:           5.0e-5
+    encoder_top_multiplier: 0.5
+    encoder_low_multiplier: 0.1
+    encoder_split_layer:    6
+  warmup_steps: 500
+
+  # Fisher Information Matrix computation for Stage 2b EWC regularization.
+  # Computed once, immediately after Stage 2a converges.
+  compute_fisher: true
+  fisher_samples: 1000    # Printed LINE batches used for diagonal Fisher estimate
+
+# ─── Stage 2b: Mixed HW + Printed Replay with EWC ────────────────────────────
+stage2b:
+  epochs: 25
+  batch_size: 8
+  accumulation_steps: 8
+  num_workers: 4
+
+  # MixedBatchSampler enforces this ratio EXACTLY per batch (not just in expectation).
+  handwritten_ratio:      0.70
+  printed_ratio:          0.30
+  replay_buffer_fraction: 0.15   # 15% random subsample of printed train = replay pool
+
+  lr:
+    decoder_base:           5.0e-6    # 10× lower than Stage 2a — protect printed knowledge
+    encoder_top_multiplier: 0.2
+    encoder_low_multiplier: 0.02
+    encoder_split_layer:    6
+  warmup_steps: 500
+
+  ewc:
+    enabled: true
+    lambda:  500.0    # EWC penalty weight. Increase toward 1000 if printed CER spikes.
+
+  # Stop Stage 2b early if printed val CER worsens by more than this absolute
+  # delta compared to the best Stage 2a checkpoint. Prevents HW over-adaptation.
+  early_stop_printed_cer_delta: 0.02   # 2 percentage points
+
+  # Smooth noisy HW val CER (only 549 samples) over a sliding window before
+  # making early-stop decisions — avoids false triggers from single-epoch variance.
+  cer_sliding_window: 3
+
+# ─── Stage 3: Paragraph Adaptation ───────────────────────────────────────────
+stage3:
+  enabled: false   # Postponed — paragraph LMDB not yet prepared
+  epochs:  1
+  batch_size: 16
+  accumulation_steps: 4
+  num_workers: 2
+  freeze_encoder: true    # Encoder fully frozen; only Decoder cross-attention trains
+
+  lr:
+    decoder_base:           2.0e-6
+    encoder_top_multiplier: 0.0
+    encoder_low_multiplier: 0.0
+    encoder_split_layer:    6
+  warmup_steps: 200
+
+# ─── General Training ─────────────────────────────────────────────────────────
+training:
+  seed:                   42
+  fp16:                   true     # torch.cuda.amp mixed precision
+  max_grad_norm:          1.0      # Gradient clipping
+  log_every_steps:        50
+  eval_every_epochs:      1
+  save_every_epochs:      1
+  keep_last_n_checkpoints: 3

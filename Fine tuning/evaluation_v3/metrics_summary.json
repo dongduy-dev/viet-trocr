@@ -1,0 +1,70 @@
+{
+  "overall": {
+    "cer": 0.0286430185712882,
+    "wer": 0.07923751207333297,
+    "total_samples": 4477
+  },
+  "per_domain": {
+    "printed": {
+      "cer": 0.011720056927417543,
+      "wer": 0.039635767458348105,
+      "samples": 3739,
+      "fps": 2.0586948509146996,
+      "time_s": 1816.1992285251617,
+      "vram_peak_gb": 1.399912448,
+      "categories": {
+        "PERFECT": 2562,
+        "MINOR_ERROR": 1153,
+        "HALLUCINATION_LOOP": 17,
+        "SUBSTITUTION": 7
+      }
+    },
+    "handwritten": {
+      "cer": 0.10567590298456572,
+      "wer": 0.26281195440073946,
+      "samples": 738,
+      "fps": 1.8186857639558924,
+      "time_s": 405.7875277996063,
+      "vram_peak_gb": 1.400211456,
+      "categories": {
+        "MINOR_ERROR": 572,
+        "HALLUCINATION_LOOP": 8,
+        "PERFECT": 109,
+        "SUBSTITUTION": 48,
+        "TRUNCATION": 1
+      }
+    }
+  },
+  "phobert_comparison": {
+    "overall_cer_without_phobert": 0.028643,
+    "overall_cer_with_phobert": 0.031714,
+    "overall_wer_without_phobert": 0.079238,
+    "overall_wer_with_phobert": 0.092176,
+    "helped": 67,
+    "hurt": 445,
+    "neutral": 3965,
+    "per_domain": {
+      "printed": {
+        "cer_without_phobert": 0.01172,
+        "cer_with_phobert": 0.01533,
+        "wer_without_phobert": 0.039636,
+        "wer_with_phobert": 0.055233
+      },
+      "handwritten": {
+        "cer_without_phobert": 0.105676,
+        "cer_with_phobert": 0.10629,
+        "wer_without_phobert": 0.262812,
+        "wer_with_phobert": 0.263428
+      }
+    }
+  },
+  "config": {
+    "model_path": "/content/drive/MyDrive/OCR/checkpoints/final_model",
+    "repetition_penalty": 1.2,
+    "max_length": 256,
+    "image_size": "128x1536",
+    "batch_size": 4,
+    "phobert": "vinai/phobert-base",
+    "address_correction": true
+  }
+}

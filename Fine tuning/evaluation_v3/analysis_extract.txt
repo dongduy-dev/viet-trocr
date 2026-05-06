@@ -1,0 +1,891 @@
+================================================================================
+SECTION 0: AGGREGATE METRICS (from metrics_summary.json)
+================================================================================
+
+  Overall:     CER=0.028643  WER=0.079238  Samples=4477
+  PRINTED     : CER=0.011720  WER=0.039636  Samples=3739  FPS=2.1
+                 Categories: PERFECT=2562, MINOR_ERROR=1153, HALLUCINATION_LOOP=17, SUBSTITUTION=7
+  HANDWRITTEN : CER=0.105676  WER=0.262812  Samples=738  FPS=1.8
+                 Categories: MINOR_ERROR=572, HALLUCINATION_LOOP=8, PERFECT=109, SUBSTITUTION=48, TRUNCATION=1
+
+  PhoBERT Comparison:
+    Without PhoBERT: CER=0.028643  WER=0.079238
+    With PhoBERT:    CER=0.031714  WER=0.092176
+    Samples: helped=67  hurt=445  neutral=3965
+    PRINTED: no_phobert_CER=0.011720 with_phobert_CER=0.015330
+    HANDWRITTEN: no_phobert_CER=0.105676 with_phobert_CER=0.106290
+
+  Error Category Distribution (overall):
+    PERFECT                    printed=2562  handwritten=109  total=2671
+    MINOR_ERROR                printed=1153  handwritten=572  total=1725
+    SUBSTITUTION               printed=   7  handwritten= 48  total=  55
+    HALLUCINATION_LOOP         printed=  17  handwritten=  8  total=  25
+    TRUNCATION                 printed=   0  handwritten=  1  total=   1
+
+  CER Distribution:
+    CER=0.00 (perfect):   2671 (59.7%)
+    CER 0-0.05 (minor):   1161 (25.9%)
+    CER 0.05-0.15 (med):   465 (10.4%)
+    CER 0.15-0.30 (high):  121 (2.7%)
+    CER > 0.30 (severe):    59 (1.3%)
+
+
+================================================================================
+SECTION 1: PhoBERT IMPACT ANALYSIS
+================================================================================
+
+  1a. PhoBERT HELPS (67 samples total)
+      Showing top 7 by CER improvement:
+
+  [PhoBERT_HELPS] idx=227 domain=handwritten cat=MINOR_ERROR
+    GT:       128 Đoàn Phú Tứ, Phường Hoà Khánh Bắc, Quận Liên Chiểu, Đà Nẵng
+    RAW:      129 Đoàn Phú Từ, Phường Hòa Khánh Bắc, Quận Liên Chiểu, Đà Nẵm
+    SANITIZ:  129 Đoàn Phú Từ, Phường Hòa Khánh Bắc, Quận Liên Chiểu, Đà Nẵm
+    FINAL:    129 Đoàn Phú Từ, Phường Hòa Khánh Bắc, Quận Liên Chiểu, Hà Nam
+    +PhoBERT: 129 Đoàn Phú Từ, Phường Hòa Khánh Bắc, Quận Liên Chiểu, Đà Nẵng
+    CER: raw=0.0952 san=0.0952 final=0.1270 phobert=0.0635
+    WER: final=0.3846 phobert=0.2308
+    NOTE: PhoBERT reduces CER by 0.0635
+
+  [PhoBERT_HELPS] idx=586 domain=handwritten cat=MINOR_ERROR
+    GT:       QL 1A, KV 7, Phường Bùi Thị Xuân, Thành phố Quy Nhơn, Bình Định
+    RAW:      QL1A, KVT, Phường Bùi Thị Xuân, Thành phố Quy Nhơn, Bình Bình
+    SANITIZ:  QL1A, KVT, Phường Bùi Thị Xuân, Thành phố Quy Nhơn, Bình Bình
+    FINAL:    QL1A, KVT, Phường Bùi Thị Xuân, Thành phố Quy Nhơn, Ninh Bình
+    +PhoBERT: QL1A, KVT, Phường Bùi Thị Xuân, Thành phố Quy Nhơn, Bình Định
+    CER: raw=0.0794 san=0.0794 final=0.1111 phobert=0.0476
+    WER: final=0.4286 phobert=0.2857
+    NOTE: PhoBERT reduces CER by 0.0635
+
+  [PhoBERT_HELPS] idx=206 domain=handwritten cat=MINOR_ERROR
+    GT:       205 Lê Lợi, Thành Phố Phan Thiết, Bình Thuận
+    RAW:      205 Là Lư, Thành Phố Phen thiết, Bình Thuận
+    SANITIZ:  205 Là Lư, Thành Phố Phen thiết, Bình Thuận
+    FINAL:    205 Là Lư, Thành Phố Phen thiết, Bình Thuận
+    +PhoBERT: 205 Là Lư, Thành Phố Phan Thiết, Bình Thuận
+    CER: raw=0.1136 san=0.1136 final=0.1136 phobert=0.0682
+    WER: final=0.4444 phobert=0.2222
+    NOTE: PhoBERT reduces CER by 0.0454
+
+  [PhoBERT_HELPS] idx=111 domain=handwritten cat=MINOR_ERROR
+    GT:       những người nói lên sự thật " phát hành, nhiều bạn đọc đã bày tỏ sự chia sẻ,
+    RAW:      những người móu lên sự thật "phar hành, nhiều bạn đặc đã bằng tỏ vụ chia sẽ,
+    SANITIZ:  những người móu lên sự thật "phar hành, nhiều bạn đặc đã bằng tỏ vụ chia sẽ,
+    FINAL:    những người móu lên sự thật "phar hành, nhiều bạn đặc đã bằng tỏ vụ chia sẽ,
+    +PhoBERT: những người nói lên sự thật " phar hành, nhiều bạn đặc đã bằng tỏ vụ chia sẽ,
+    CER: raw=0.1579 san=0.1579 final=0.1579 phobert=0.1184
+    WER: final=0.3889 phobert=0.2778
+    NOTE: PhoBERT reduces CER by 0.0395
+
+  [PhoBERT_HELPS] idx=664 domain=handwritten cat=MINOR_ERROR
+    GT:       Số 414 Đà Nẵng, Phường Đông Hải 1, Quận Hải An, Hải Phòng
+    RAW:      Số 414 Đà Nẵng, phường Đông Hả 1, quận Hải An, Há Phòng
+    SANITIZ:  Số 414 Đà Nẵng, phường Đông Hả 1, quận Hải An, Há Phòng
+    FINAL:    Số 414 Đà Nẵng, phường Đông Hải, quận Hải An, Hải Phòng
+    +PhoBERT: Số 414 Đà Nẵng, phường Đông Hải 1, quận Hải An, Hải Phòng
+    CER: raw=0.0877 san=0.0877 final=0.0702 phobert=0.0351
+    WER: final=0.3077 phobert=0.1538
+    NOTE: PhoBERT reduces CER by 0.0351
+
+  [PhoBERT_HELPS] idx=518 domain=handwritten cat=MINOR_ERROR
+    GT:       187/7 Điện Biên Phủ, Phường Đa Kao, Quận 1, TP Hồ Chí Minh
+    RAW:      187/7 Điên Biên phủ, Phường Đao, Quản 1,TP Hồ Chí Minh
+    SANITIZ:  187/7 Điên Biên phủ, Phường Đao, Quản 1,TP Hồ Chí Minh
+    FINAL:    187/7 Điên Biên phủ, Phường Đao, Quản 1,TP Hồ Chí Minh
+    +PhoBERT: 187/7 Điên Biên phủ, Phường Đao, Quận 1, TP Hồ Chí Minh
+    CER: raw=0.1207 san=0.1207 final=0.1207 phobert=0.0862
+    WER: final=0.5385 phobert=0.3077
+    NOTE: PhoBERT reduces CER by 0.0345
+
+  [PhoBERT_HELPS] idx=250 domain=handwritten cat=MINOR_ERROR
+    GT:       Số nhà 120, Khu 5, Phường Nam Hòa, Thị xã Quảng Yên, Quảng Ninh
+    RAW:      Số khê 120, Khu 5, Phường Nam Hoà, Trị xã Quảng Yên, Quảng Minh
+    SANITIZ:  Số khê 120, Khu 5, Phường Nam Hoà, Trị xã Quảng Yên, Quảng Minh
+    FINAL:    Số khê 120, Khu 5, Phường Nam Hoà, Trị xã Quảng Yên, Quảng Minh
+    +PhoBERT: Số nhà 120, Khu 5, Phường Nam Hoà, Trị xã Quảng Yên, Quảng Minh
+    CER: raw=0.0952 san=0.0952 final=0.0952 phobert=0.0635
+    WER: final=0.2857 phobert=0.2143
+    NOTE: PhoBERT reduces CER by 0.0317
+
+  1b. PhoBERT HURTS (445 samples total)
+      Showing top 7 by CER degradation:
+
+  [PhoBERT_HURTS] idx=1238 domain=printed cat=PERFECT
+    GT:       mình".
+    RAW:      mình".
+    SANITIZ:  mình".
+    FINAL:    mình".
+    +PhoBERT: mình ".
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1667
+    WER: final=0.0000 phobert=2.0000
+    NOTE: PhoBERT increases CER by 0.1667
+
+  [PhoBERT_HURTS] idx=1536 domain=printed cat=PERFECT
+    GT:       được".
+    RAW:      được".
+    SANITIZ:  được".
+    FINAL:    được".
+    +PhoBERT: được ".
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1667
+    WER: final=0.0000 phobert=2.0000
+    NOTE: PhoBERT increases CER by 0.1667
+
+  [PhoBERT_HURTS] idx=2682 domain=printed cat=PERFECT
+    GT:       Trong đó, "Da" là "sông"
+    RAW:      Trong đó, "Da" là "sông"
+    SANITIZ:  Trong đó, "Da" là "sông"
+    FINAL:    Trong đó, "Da" là "sông"
+    +PhoBERT: Trong đó, " Da " là " sông "
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1667
+    WER: final=0.0000 phobert=1.2000
+    NOTE: PhoBERT increases CER by 0.1667
+
+  [PhoBERT_HURTS] idx=3738 domain=printed cat=PERFECT
+    GT:       "Nguyên đán"
+    RAW:      "Nguyên đán"
+    SANITIZ:  "Nguyên đán"
+    FINAL:    "Nguyên đán"
+    +PhoBERT: " Nguyên đán "
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1667
+    WER: final=0.0000 phobert=2.0000
+    NOTE: PhoBERT increases CER by 0.1667
+
+  [PhoBERT_HURTS] idx=426 domain=printed cat=PERFECT
+    GT:       phát lương ăn áo mặc.
+    RAW:      phát lương ăn áo mặc.
+    SANITIZ:  phát lương ăn áo mặc.
+    FINAL:    phát lương ăn áo mặc.
+    +PhoBERT: phát lương ăn, mặc.
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1429
+    WER: final=0.0000 phobert=0.4000
+    NOTE: PhoBERT increases CER by 0.1429
+
+  [PhoBERT_HURTS] idx=3406 domain=printed cat=PERFECT
+    GT:       15 người khác bị án tù
+    RAW:      15 người khác bị án tù
+    SANITIZ:  15 người khác bị án tù
+    FINAL:    15 người khác bị án tù
+    +PhoBERT: 15 người khác bị án.
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1364
+    WER: final=0.0000 phobert=0.3333
+    NOTE: PhoBERT increases CER by 0.1364
+
+  [PhoBERT_HURTS] idx=636 domain=printed cat=MINOR_ERROR
+    GT:       là Bảo Thánh Quốc mẫu).
+    RAW:      là Bảo Thánh quốc mẫu).
+    SANITIZ:  là Bảo Thánh quốc mẫu).
+    FINAL:    là Bảo Thánh quốc mẫu).
+    +PhoBERT: (Bảo Thánh quốc mẫu).
+    CER: raw=0.0435 san=0.0435 final=0.0435 phobert=0.1739
+    WER: final=0.2000 phobert=0.6000
+    NOTE: PhoBERT increases CER by 0.1304
+
+================================================================================
+SECTION 2: SANITIZER (RegexSanitizer) IMPACT
+================================================================================
+
+  Sanitizer improved 41 samples
+  Top 7 biggest improvements:
+
+  [SANITIZER_HELPS] idx=3190 domain=printed cat=PERFECT
+    GT:       phong cách Gô loa...
+    RAW:      phong cách Gô loa.......................................................................................................
+    SANITIZ:  phong cách Gô loa...
+    FINAL:    phong cách Gô loa...
+    +PhoBERT: phong cách Gô loa...
+    CER: raw=11.7000 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+    NOTE: Sanitizer reduces CER by 11.7000 (hallucination collapse)
+
+  [SANITIZER_HELPS] idx=2373 domain=printed cat=PERFECT
+    GT:       rìa lưỡi ngang, nạo,...
+    RAW:      rìa lưỡi ngang, nạo,....................................................................................................
+    SANITIZ:  rìa lưỡi ngang, nạo,...
+    FINAL:    rìa lưỡi ngang, nạo,...
+    +PhoBERT: rìa lưỡi ngang, nạo,...
+    CER: raw=10.0435 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+    NOTE: Sanitizer reduces CER by 10.0435 (hallucination collapse)
+
+  [SANITIZER_HELPS] idx=2545 domain=printed cat=PERFECT
+    GT:       "Đá trông chồng" của Lê Minh Sơn,...
+    RAW:      "Đá trông chồng" của Lê Minh Sơn,.......................................................................................
+    SANITIZ:  "Đá trông chồng" của Lê Minh Sơn,...
+    FINAL:    "Đá trông chồng" của Lê Minh Sơn,...
+    +PhoBERT: " Đá trông chồng " của Lê Minh Sơn,...
+    CER: raw=6.0556 san=0.0000 final=0.0000 phobert=0.0556
+    WER: final=0.0000 phobert=0.5714
+    NOTE: Sanitizer reduces CER by 6.0556 (hallucination collapse)
+
+  [SANITIZER_HELPS] idx=377 domain=printed cat=HALLUCINATION_LOOP
+    GT:       quân sang đây... Phỏng chừng nhà nước chịu được mấy phen
+    RAW:      quân sang đây...........................................................................................................
+    SANITIZ:  quân sang đây...
+    FINAL:    quân sang đây...
+    +PhoBERT: quân sang đây...
+    CER: raw=4.2500 san=0.7143 final=0.7143 phobert=0.7143
+    WER: final=0.7273 phobert=0.7273
+    NOTE: Sanitizer reduces CER by 3.5357 (hallucination collapse)
+
+  [SANITIZER_HELPS] idx=109 domain=handwritten cat=HALLUCINATION_LOOP
+    GT:       văn hóa. Tiếp tục tập trung nguồn lực cho chương trình 3 giảm...
+    RAW:      văn hóa. Tiếp tục tập trong nguồn lực cho đương trình 3 giảm............................................................
+    SANITIZ:  văn hóa. Tiếp tục tập trong nguồn lực cho đương trình 3 giảm...
+    FINAL:    văn hóa. Tiếp tục tập trong nguồn lực cho đương trình 3 giảm...
+    +PhoBERT: văn hóa. Tiếp tục tập trong nguồn lực cho đương trình 3 giảm...
+    CER: raw=3.0312 san=0.0469 final=0.0469 phobert=0.0469
+    WER: final=0.1538 phobert=0.1538
+    NOTE: Sanitizer reduces CER by 2.9843 (hallucination collapse)
+
+  [SANITIZER_HELPS] idx=3428 domain=printed cat=PERFECT
+    GT:       có đa dạng các loại địa hình từ đồng bằng, vùng núi, ven biển,...
+    RAW:      có đa dạng các loại địa hình từ đồng bằng, vùng núi, ven biển,..........................................................
+    SANITIZ:  có đa dạng các loại địa hình từ đồng bằng, vùng núi, ven biển,...
+    FINAL:    có đa dạng các loại địa hình từ đồng bằng, vùng núi, ven biển,...
+    +PhoBERT: có đa dạng các loại địa hình từ đồng bằng, vùng núi, ven biển,...
+    CER: raw=2.9077 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+    NOTE: Sanitizer reduces CER by 2.9077 (hallucination collapse)
+
+  [SANITIZER_HELPS] idx=2450 domain=printed cat=PERFECT
+    GT:       Thiêm, cầu Ba Son,...
+    RAW:      Thiêm, cầu Ba Son,..................................................
+    SANITIZ:  Thiêm, cầu Ba Son,...
+    FINAL:    Thiêm, cầu Ba Son,...
+    +PhoBERT: Thiêm, cầu Ba Son,...
+    CER: raw=2.2381 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+    NOTE: Sanitizer reduces CER by 2.2381 (hallucination collapse)
+
+================================================================================
+SECTION 3: ADDRESS CORRECTOR IMPACT
+================================================================================
+
+  Address corrector modified 315 samples:
+    Helped: 218  Hurt: 73  Neutral: 24
+
+  3a. Address Corrector HELPS (top 7):
+
+  [ADDR_HELPS] idx=442 domain=handwritten cat=MINOR_ERROR
+    GT:       26D/25, Khu phố 5, Thị trấn Dầu Tiếng, Huyện Dầu Tiếng, Bình Dương
+    RAW:      26/35, Khu phốc, Thị trấn Dầi Tăng, Huyện Lầu Tống, Bình Dùng
+    SANITIZ:  26/35, Khu phốc, Thị trấn Dầi Tăng, Huyện Lầu Tống, Bình Dùng
+    FINAL:    26/35, Khu phốc, Thị trấn Dầu Tiếng, Huyện Dầu Tiếng, Bình Dương
+    +PhoBERT: 26/35, Khu phốc, Thị trấn Dầu Tiếng, Huyện Dầu Tiếng, Bình Dương
+    CER: raw=0.1818 san=0.1818 final=0.0606 phobert=0.0606
+    WER: final=0.2308 phobert=0.2308
+    NOTE: Address corrector reduces CER by 0.1212
+
+  [ADDR_HELPS] idx=594 domain=handwritten cat=MINOR_ERROR
+    GT:       TK 13, Phường Bắc Nghĩa, Thành Phố Đồng Hới, Quảng Bình
+    RAW:      Tra 13, Phường Bắc Nghĩa &, Thành Phố Đồng Hới, Quản 9 8 ình
+    SANITIZ:  Tra 13, Phường Bắc Nghĩa &, Thành Phố Đồng Hới, Quản 9 8 ình
+    FINAL:    Tra 13, Phường Bắc Nghĩa, Thành Phố Đồng Hới, Quảng Bình
+    +PhoBERT: Tra 13, Phường Bắc Nghĩa, Thành Phố Đồng Hới, Quảng Bình
+    CER: raw=0.1455 san=0.1455 final=0.0364 phobert=0.0364
+    WER: final=0.0909 phobert=0.0909
+    NOTE: Address corrector reduces CER by 0.1091
+
+  [ADDR_HELPS] idx=566 domain=handwritten cat=MINOR_ERROR
+    GT:       Xóm Sơn Phú, Xã Cao Sơn, Huyện Đà Bắc, Hòa Bình
+    RAW:      Xóm Sơn Phủ, Xã Cao sửi, Huyện Đà Mắt, Tôi Bình.
+    SANITIZ:  Xóm Sơn Phủ, Xã Cao sửi, Huyện Đà Mắt, Tôi Bình.
+    FINAL:    Xóm Sơn Phủ, Xã Cao Sơn, Huyện Đà Bắc, Thái Bình
+    +PhoBERT: Xóm Sơn Phủ, Xã Cao Sơn, Huyện Đà Bắc, Thái Bình
+    CER: raw=0.2128 san=0.2128 final=0.1064 phobert=0.1064
+    WER: final=0.1818 phobert=0.1818
+    NOTE: Address corrector reduces CER by 0.1064
+
+  [ADDR_HELPS] idx=254 domain=handwritten cat=MINOR_ERROR
+    GT:       ấp Trà Đư, Xã Thường Lạc, Huyện Hồng Ngự, Đồng Tháp
+    RAW:      ấp Trìi, Đời Xã Thưng Lọc, Huyện Hồa Ngự, Đồng Thập
+    SANITIZ:  ấp Trìi, Đời Xã Thưng Lọc, Huyện Hồa Ngự, Đồng Thập
+    FINAL:    ấp Trìi, Đời Xã Thường Lạc, Huyện Hồng Ngự, Đồng Tháp
+    +PhoBERT: ấp Trìi, Đời Xã Thường Lạc, Huyện Hồng Ngự, Đồng Tháp
+    CER: raw=0.1961 san=0.1961 final=0.0980 phobert=0.0980
+    WER: final=0.1818 phobert=0.1818
+    NOTE: Address corrector reduces CER by 0.0981
+
+  [ADDR_HELPS] idx=409 domain=handwritten cat=MINOR_ERROR
+    GT:       02 Lê Lai, Thị trấn Kông Chro, Huyện Kông Chro, Gia Lai
+    RAW:      02 Lê lai, Thị Trấn kơng chọo, Huyện Kông Cho, Gia Lai
+    SANITIZ:  02 Lê lai, Thị Trấn kơng chọo, Huyện Kông Cho, Gia Lai
+    FINAL:    02 Lê lai, Thị Trấn Kông Chro, Huyện Kông Chro, Gia Lai
+    +PhoBERT: 02 Lê lai, Thị Trấn Kông Chro, Huyện Kông Chro, Gia Lai
+    CER: raw=0.1273 san=0.1273 final=0.0364 phobert=0.0364
+    WER: final=0.1667 phobert=0.1667
+    NOTE: Address corrector reduces CER by 0.0909
+
+  [ADDR_HELPS] idx=735 domain=handwritten cat=MINOR_ERROR
+    GT:       305/66 Lê Văn Sỹ, Phường 1, Quận Tân Bình, TP Hồ Chí Minh
+    RAW:      205/46 sẽ Văn lý, Phường 1, Quận Tân Đình, Tp Hồa Lĩi Minh
+    SANITIZ:  205/46 sẽ Văn lý, Phường 1, Quận Tân Đình, Tp Hồa Lĩi Minh
+    FINAL:    205/46 sẽ Văn lý, Phường 1, Quận Tân Bình, Tp Hồ Chí Minh
+    +PhoBERT: 205/46 sẽ Văn lý, Phường 1, Quận Tân Bình, Tp Hồ Chí Minh
+    CER: raw=0.2105 san=0.2105 final=0.1228 phobert=0.1228
+    WER: final=0.3077 phobert=0.3077
+    NOTE: Address corrector reduces CER by 0.0877
+
+  [ADDR_HELPS] idx=598 domain=handwritten cat=MINOR_ERROR
+    GT:       15B/71 Lê Thánh Tôn, Phường Bến Nghé, Quận 1, TP Hồ Chí Minh
+    RAW:      15 B/41Lê Thánh Tâ, Phường Bến Nghễ, Quận 1, TP Xót chí Minh
+    SANITIZ:  15 B/41Lê Thánh Tâ, Phường Bến Nghễ, Quận 1, TP Xót chí Minh
+    FINAL:    15 B/41Lê Thánh Tâ, Phường Bến Nghé, Quận 1, TP Hồ Chí Minh
+    +PhoBERT: 15 B/41Lê Thánh Tâ, Phường Bến Nghé, Quận 1, TP Hồ Chí Minh
+    CER: raw=0.1667 san=0.1667 final=0.0833 phobert=0.0833
+    WER: final=0.2308 phobert=0.2308
+    NOTE: Address corrector reduces CER by 0.0834
+
+  3b. Address Corrector HURTS (top 5):
+
+  [ADDR_HURTS] idx=2670 domain=printed cat=MINOR_ERROR
+    GT:       huyện Kiến Thụy.
+    RAW:      huyện Kiến Thụy.
+    SANITIZ:  huyện Kiến Thụy.
+    FINAL:    huyện Kiến Thuỵ
+    +PhoBERT: huyện Kiến Thuỵ
+    CER: raw=0.0000 san=0.0000 final=0.1875 phobert=0.1875
+    WER: final=0.3333 phobert=0.3333
+    NOTE: Address corrector increases CER by 0.1875
+
+  [ADDR_HURTS] idx=3180 domain=printed cat=MINOR_ERROR
+    GT:       nằm trong 7 quận nội thành.
+    RAW:      nằm trong 7 quận nội thành.
+    SANITIZ:  nằm trong 7 quận nội thành.
+    FINAL:    nằm trong 7 quận Núi Thành
+    +PhoBERT: nằm trong 7 quận Núi Thành
+    CER: raw=0.0000 san=0.0000 final=0.1481 phobert=0.1481
+    WER: final=0.3333 phobert=0.3333
+    NOTE: Address corrector increases CER by 0.1481
+
+  [ADDR_HURTS] idx=470 domain=printed cat=MINOR_ERROR
+    GT:       bọn họ an trí ở tỉnh Quảng Tây.
+    RAW:      bọn họ an trí ở tỉnh Quảng Tây.
+    SANITIZ:  bọn họ an trí ở tỉnh Quảng Tây.
+    FINAL:    bọn họ an trí ở tỉnh Quảng Trị
+    +PhoBERT: bọn họ an trí ở tỉnh Quảng Trị
+    CER: raw=0.0000 san=0.0000 final=0.0968 phobert=0.0968
+    WER: final=0.1250 phobert=0.1250
+    NOTE: Address corrector increases CER by 0.0968
+
+  [ADDR_HURTS] idx=2863 domain=printed cat=MINOR_ERROR
+    GT:       Kết quả là có rất nhiều chủng loại, hình dạng
+    RAW:      Kết quả là có rất nhiều chủng loại, hình dạng
+    SANITIZ:  Kết quả là có rất nhiều chủng loại, hình dạng
+    FINAL:    Kết quả là có rất nhiều chủng loại, Bình Dương
+    +PhoBERT: Kết quả là có rất nhiều chủng loại, Bình Dương
+    CER: raw=0.0000 san=0.0000 final=0.0889 phobert=0.0889
+    WER: final=0.2000 phobert=0.2000
+    NOTE: Address corrector increases CER by 0.0889
+
+  [ADDR_HURTS] idx=3529 domain=printed cat=MINOR_ERROR
+    GT:       đường Hồ Chí Minh tại xã Khâm Đức.
+    RAW:      đường Hồ Chí Minh tại xã Khâm Đức.
+    SANITIZ:  đường Hồ Chí Minh tại xã Khâm Đức.
+    FINAL:    đường Hồ Chí Minh tại xã Châu Đức
+    +PhoBERT: đường Hồ Chí Minh tại xã Châu Đức
+    CER: raw=0.0000 san=0.0000 final=0.0882 phobert=0.0882
+    WER: final=0.2500 phobert=0.2500
+    NOTE: Address corrector increases CER by 0.0882
+
+================================================================================
+SECTION 4: ERROR CATEGORIES — REPRESENTATIVE SAMPLES
+================================================================================
+
+  Category: PERFECT (2671 samples)
+
+  [PERFECT/printed] idx=1 domain=printed cat=PERFECT
+    GT:       - Cha thần sinh ở Cao Bằng, mất ở Cao Bằng, thần cũng
+    RAW:      - Cha thần sinh ở Cao Bằng, mất ở Cao Bằng, thần cũng
+    SANITIZ:  - Cha thần sinh ở Cao Bằng, mất ở Cao Bằng, thần cũng
+    FINAL:    - Cha thần sinh ở Cao Bằng, mất ở Cao Bằng, thần cũng
+    +PhoBERT: - Cha thần sinh ở Cao @@ Bằng, mất ở Cao Bằng, thần cũng
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.0566
+    WER: final=0.0000 phobert=0.0769
+
+  [PERFECT/printed] idx=2217 domain=printed cat=PERFECT
+    GT:       một trời mưa nhỏ, đến canh năm mưa to, nước tràn trề. Vua đề thơ ở miếu Hoằng
+    RAW:      một trời mưa nhỏ, đến canh năm mưa to, nước tràn trề. Vua đề thơ ở miếu Hoằng
+    SANITIZ:  một trời mưa nhỏ, đến canh năm mưa to, nước tràn trề. Vua đề thơ ở miếu Hoằng
+    FINAL:    một trời mưa nhỏ, đến canh năm mưa to, nước tràn trề. Vua đề thơ ở miếu Hoằng
+    +PhoBERT: một trời mưa nhỏ, đến canh năm mưa to, nước tràn trề. Vua đề thơ ở miếu Hoằng
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+
+  [PERFECT/handwritten] idx=36 domain=handwritten cat=PERFECT
+    GT:       con " không dám kêu mà thôi!
+    RAW:      con " không dám kêu mà thôi!
+    SANITIZ:  con " không dám kêu mà thôi!
+    FINAL:    con " không dám kêu mà thôi!
+    +PhoBERT: con " không dám kêu mà thôi!
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+
+  [PERFECT/handwritten] idx=440 domain=handwritten cat=PERFECT
+    GT:       Xã Thắng Mố, Xã Thắng Mố, Huyện Yên Minh, Hà Giang
+    RAW:      Xã Thắng Mồ, Xã Thống Mổ, Huyện Yên Minh, Hà Giang
+    SANITIZ:  Xã Thắng Mồ, Xã Thống Mổ, Huyện Yên Minh, Hà Giang
+    FINAL:    Xã Thắng Mố, Xã Thắng Mố, Huyện Yên Minh, Hà Giang
+    +PhoBERT: Xã Thắng Mố, Xã Thắng Mố, Huyện Yên Minh, Hà Giang
+    CER: raw=0.0600 san=0.0600 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+
+
+  Category: MINOR_ERROR (1725 samples)
+
+  [MINOR_ERROR/printed] idx=1316 domain=printed cat=MINOR_ERROR
+    GT:       Nhà Minh sai Ổ Tu sang báo việc Thái Tông lên ngôi và đổi niên hiệu.
+    RAW:      Nhà Minh sai Ổ Tu1 sang báo việc Thái Tông lên ngôi và đổi niên hiệu.
+    SANITIZ:  Nhà Minh sai Ổ Tu1 sang báo việc Thái Tông lên ngôi và đổi niên hiệu.
+    FINAL:    Nhà Minh sai Ổ Tu1 sang báo việc Thái Tông lên ngôi và đổi niên hiệu.
+    +PhoBERT: Nhà Minh sai Ổ Tu1 sang báo việc Thái Tông lên ngôi và đổi niên hiệu.
+    CER: raw=0.0147 san=0.0147 final=0.0147 phobert=0.0147
+    WER: final=0.0625 phobert=0.0625
+
+  [MINOR_ERROR/printed] idx=1965 domain=printed cat=MINOR_ERROR
+    GT:       Mùa xuân, tháng giêng, truy đòi tiền thuế.
+    RAW:      Mùa xuân, tháng giêng, truy đòi tiền thuế1.
+    SANITIZ:  Mùa xuân, tháng giêng, truy đòi tiền thuế1.
+    FINAL:    Mùa xuân, tháng giêng, truy đòi tiền thuế1.
+    +PhoBERT: Mùa xuân, tháng giêng, truy đòi tiền thuế1.
+    CER: raw=0.0238 san=0.0238 final=0.0238 phobert=0.0238
+    WER: final=0.1250 phobert=0.1250
+
+  [MINOR_ERROR/printed] idx=1123 domain=printed cat=MINOR_ERROR
+    GT:       Mùa thu, tháng 7, ban cho quan phủ Lâm Bình là Phạm A Song tước Minh tự.
+    RAW:      Mùa thu, tháng 7, ban cho quân phủ Lâm Bình là Phạm A Sông tước minh tự.
+    SANITIZ:  Mùa thu, tháng 7, ban cho quân phủ Lâm Bình là Phạm A Sông tước minh tự.
+    FINAL:    Mùa thu, tháng 7, ban cho quân phủ Lâm Bình là Phạm A Sông tước minh tự.
+    +PhoBERT: Mùa thu, tháng 7, ban cho quân phủ Lâm Bình là Phạm A Sông tước minh tự.
+    CER: raw=0.0417 san=0.0417 final=0.0417 phobert=0.0417
+    WER: final=0.1765 phobert=0.1765
+
+  [MINOR_ERROR/handwritten] idx=419 domain=handwritten cat=MINOR_ERROR
+    GT:       596 Nguyễn Đình Chiểu, Phường 03, Quận 3, TP Hồ Chí Minh
+    RAW:      596 Nguyễn Đình Chiêu, thường 03, Quận 3, TP Hồ Chế Minh
+    SANITIZ:  596 Nguyễn Đình Chiêu, thường 03, Quận 3, TP Hồ Chế Minh
+    FINAL:    596 Nguyễn Đình Chiêu, thường 03, Quận 3, TP Hồ Chí Minh
+    +PhoBERT: 596 Nguyễn Đình Chiêu, thường 03, Quận 3, TP Hồ Chí Minh
+    CER: raw=0.0536 san=0.0536 final=0.0357 phobert=0.0357
+    WER: final=0.1667 phobert=0.1667
+
+  [MINOR_ERROR/handwritten] idx=677 domain=handwritten cat=MINOR_ERROR
+    GT:       07 Điện Biên Phủ, Phường Phường Đúc, Thành phố Huế, Thừa Thiên - Huế
+    RAW:      07 Điện Bên Phả, Phường Phường Đác, Thành phố Huế, Thừa Thiên - Huế
+    SANITIZ:  07 Điện Bên Phả, Phường Phường Đác, Thành phố Huế, Thừa Thiên - Huế
+    FINAL:    07 Điện Bên Phả, Phường Phường Đác, Thành phố Huế, Thừa Thiên Huế
+    +PhoBERT: 07 Điện Bên Phả, Phường Phường Đúc, Thành phố Huế, Thừa Thiên Huế
+    CER: raw=0.0441 san=0.0441 final=0.0735 phobert=0.0588
+    WER: final=0.2857 phobert=0.2143
+
+  [MINOR_ERROR/handwritten] idx=323 domain=handwritten cat=MINOR_ERROR
+    GT:       99E Cộng Hòa, Phường 4, Quận Tân Bình, TP Hồ Chí Minh
+    RAW:      97 E Cộng Hà, Phường 4, Quận Kiên Bình, TP Hồ Chí Minh
+    SANITIZ:  97 E Cộng Hà, Phường 4, Quận Kiên Bình, TP Hồ Chí Minh
+    FINAL:    97 E Cộng Hà, Phường 4, Quận Kiên Bình, TP Hồ Chí Minh
+    +PhoBERT: 97 E Cộng Hà, Phường 4, Quận Kiên Bình, TP Hồ Chí Minh
+    CER: raw=0.1321 san=0.1321 final=0.1321 phobert=0.1321
+    WER: final=0.3333 phobert=0.3333
+
+
+  Category: SUBSTITUTION (55 samples)
+
+  [SUBSTITUTION/printed] idx=898 domain=printed cat=SUBSTITUTION
+    GT:       Quyển VI
+    RAW:      QUYỂN VI
+    SANITIZ:  QUYỂN VI
+    FINAL:    QUYỂN VI
+    +PhoBERT: QUYỂN VI
+    CER: raw=0.5000 san=0.5000 final=0.5000 phobert=0.5000
+    WER: final=0.5000 phobert=0.5000
+
+  [SUBSTITUTION/printed] idx=2242 domain=printed cat=SUBSTITUTION
+    GT:       Quang Chính Chí Đức Đại Công Thánh Văn Thần Vū Dat
+    RAW:      Quảng Vận Cao Minh Quang Chính Chí Đức Đại Công Thánh Văn Thần Vũ Đạt
+    SANITIZ:  Quảng Vận Cao Minh Quang Chính Chí Đức Đại Công Thánh Văn Thần Vũ Đạt
+    FINAL:    Quảng Vận Cao Minh Quang Chính Chí Đức Đại Công Thánh Văn Thần Vũ Đạt
+    +PhoBERT: Quảng Vận Cao Minh Quang Chính Chí Đức Đại Công Thánh Văn Thần Vũ Đạt
+    CER: raw=0.4400 san=0.4400 final=0.4400 phobert=0.4400
+    WER: final=0.5455 phobert=0.5455
+
+  [SUBSTITUTION/printed] idx=739 domain=printed cat=SUBSTITUTION
+    GT:       34 DAI VIETSUKY TOANTHU
+    RAW:      34 ĐẠI VIỆT SỬ KÝ TOÀN THƯ
+    SANITIZ:  34 ĐẠI VIỆT SỬ KÝ TOÀN THƯ
+    FINAL:    34 ĐẠI VIỆT SỬ KÝ TOÀN THƯ
+    +PhoBERT: 34 ĐẠI VIỆT SỬ KÝ TOÀN THƯ
+    CER: raw=0.4348 san=0.4348 final=0.4348 phobert=0.4348
+    WER: final=1.5000 phobert=1.5000
+
+  [SUBSTITUTION/handwritten] idx=657 domain=handwritten cat=SUBSTITUTION
+    GT:       Số nhà 6, hẻm 124/22/53 âu Cơ, Phường Tứ Liên, Quận Tây Hồ, Hà Nội
+    RAW:      Số Tiền Đà, F9, Quận 5, TP Hồ Chí Minh
+    SANITIZ:  Số Tiền Đà, F9, Quận 5, TP Hồ Chí Minh
+    FINAL:    Số Tiền Đà, F9, Quận 5, TP Hồ Chí Minh
+    +PhoBERT: Số Tiền Đà, F9, Quận 5, TP Hồ Chí Minh
+    CER: raw=0.7727 san=0.7727 final=0.7727 phobert=0.7727
+    WER: final=0.9333 phobert=0.9333
+
+  [SUBSTITUTION/handwritten] idx=466 domain=handwritten cat=SUBSTITUTION
+    GT:       Hoá Thượng, Huyện Đồng Hỷ, Thái Nguyên
+    RAW:      Hoà Thực vợi, ĐDND Y Cộn Đồng ty, Ứn Nguyễn
+    SANITIZ:  Hoà Thực vợi, ĐDND Y Cộn Đồng ty, Ứn Nguyễn
+    FINAL:    Hoà Thực vợi, ĐDND Y Cộn Đồng ty, Ứn Nguyễn
+    +PhoBERT: Hoà Thực vợi, ĐDND Y Cộn Đồng ty, Ứn Nguyễn
+    CER: raw=0.6053 san=0.6053 final=0.6053 phobert=0.6053
+    WER: final=1.2857 phobert=1.2857
+
+  [SUBSTITUTION/handwritten] idx=386 domain=handwritten cat=SUBSTITUTION
+    GT:       Số 339, phố Huế, Phường Phố Huế, Quận Hai Bà Trưng, Hà Nội
+    RAW:      Chong cố 739, phố thiếng Phường Phồ Đe Lê Quận đà Trương 15/002
+    SANITIZ:  Chong cố 739, phố thiếng Phường Phồ Đe Lê Quận đà Trương 15/002
+    FINAL:    Chong cố 739, phố thiếng Phường Phồ Đe Lê Quận đà Trương 15/002
+    +PhoBERT: Chong cố 739, phố thiếng Phường Phồ Đe Lê Quận đà Trương 15/002
+    CER: raw=0.5517 san=0.5517 final=0.5517 phobert=0.5517
+    WER: final=0.9231 phobert=0.9231
+
+
+  Category: HALLUCINATION_LOOP (25 samples)
+
+  [HALLUCINATION_LOOP/printed] idx=377 domain=printed cat=HALLUCINATION_LOOP
+    GT:       quân sang đây... Phỏng chừng nhà nước chịu được mấy phen
+    RAW:      quân sang đây...........................................................................................................
+    SANITIZ:  quân sang đây...
+    FINAL:    quân sang đây...
+    +PhoBERT: quân sang đây...
+    CER: raw=4.2500 san=0.7143 final=0.7143 phobert=0.7143
+    WER: final=0.7273 phobert=0.7273
+
+  [HALLUCINATION_LOOP/printed] idx=3435 domain=printed cat=HALLUCINATION_LOOP
+    GT:       thành phố..
+    RAW:      thành phố..........
+    SANITIZ:  thành phố...
+    FINAL:    thành phố...
+    +PhoBERT: thành phố...
+    CER: raw=0.7273 san=0.0909 final=0.0909 phobert=0.0909
+    WER: final=0.5000 phobert=0.5000
+
+  [HALLUCINATION_LOOP/printed] idx=949 domain=printed cat=HALLUCINATION_LOOP
+    GT:       hiệu] Thượng đô, Thủy dạ xoa đô, Chân kinh đô, thích các chữ như "Chân kim" lên
+    RAW:      hiệu] Thượng đô, ", Thủy dạ xoa đô, Chân kinh đô, thích các chữ như "Chân kim "...... lên
+    SANITIZ:  hiệu] Thượng đô, ", Thủy dạ xoa đô, Chân kinh đô, thích các chữ như "Chân kim "... lên
+    FINAL:    hiệu] Thượng đô, ", Thủy dạ xoa đô, Chân kinh đô, thích các chữ như "Chân kim "... lên
+    +PhoBERT: hiệu] Thượng đô, ", Thủy dạ xoa đô, Chân kinh đô, thích các chữ như " Chân kim "... lên
+    CER: raw=0.1266 san=0.0886 final=0.0886 phobert=0.1013
+    WER: final=0.1765 phobert=0.2941
+
+  [HALLUCINATION_LOOP/handwritten] idx=625 domain=handwritten cat=HALLUCINATION_LOOP
+    GT:       Số 15 Đông Khê, Phường Đông Khê, Quận Ngô Quyền, Hải Phòng
+    RAW:      Số I5ĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐĐường Khô, sực Tên quyền, Hải Phòn có
+    SANITIZ:  Số I5ĐĐĐường Khô, sực Tên quyền, Hải Phòn có
+    FINAL:    Số I5ĐĐĐường Khô, sực Tên quyền, Hải Phòng
+    +PhoBERT: Số I5ĐĐĐường Khô, sực Tên quyền, Hải Phòng
+    CER: raw=1.5517 san=0.5172 final=0.4655 phobert=0.4655
+    WER: final=0.7500 phobert=0.7500
+
+  [HALLUCINATION_LOOP/handwritten] idx=358 domain=handwritten cat=HALLUCINATION_LOOP
+    GT:       2/25 Lê Chí Dân, ấp 3, Thành Phố Thủ Dầu Một, Bình Dương
+    RAW:      27/5 Lê Chi Dân, CM 7, Thành Nội Trư Dầu Nội, Km phơp, 20000n
+    SANITIZ:  27/5 Lê Chi Dân, CM 7, Thành Nội Trư Dầu Nội, Km phơp, 2000n
+    FINAL:    27/5 Lê Chi Dân, CM 7, Thành Nội Trư Dầu Nội, Km phơp, 2000n
+    +PhoBERT: 27/5 Lê Chi Dân, CM 7, Thành Nội Trư Dầu Nội, Km phơp, 2000n
+    CER: raw=0.4643 san=0.4464 final=0.4464 phobert=0.4464
+    WER: final=0.7692 phobert=0.7692
+
+  [HALLUCINATION_LOOP/handwritten] idx=113 domain=handwritten cat=HALLUCINATION_LOOP
+    GT:       Xuân Đại 150.000 đồng, một cô gái tên Nhung ở Tân Bình gửi tặng 100.000 đ,
+    RAW:      Xuân Đạ 150.000000 đồng, một cô yến trả Nhưng ởi Tân Bình quả bặng 100.042,
+    SANITIZ:  Xuân Đạ 150.000 đồng, một cô yến trả Nhưng ởi Tân Bình quả bặng 100.042,
+    FINAL:    Xuân Đạ 150.000 đồng, một cô yến trả Nhưng ởi Tân Bình quả bặng 100.042,
+    +PhoBERT: Xuân Đạ 150.000 đồng, một cô yến trả Nhưng ởi Tân Bình quả bặng 100.042,
+    CER: raw=0.2568 san=0.2162 final=0.2162 phobert=0.2162
+    WER: final=0.5625 phobert=0.5625
+
+
+  Category: TRUNCATION (1 samples)
+
+  [TRUNCATION/handwritten] idx=235 domain=handwritten cat=TRUNCATION
+    GT:       Khu 5, Thị trấn Kỳ Sơn, Huyện Kỳ Sơn, Hòa Bình
+    RAW:      Khuố, Thị
+    SANITIZ:  Khuố, Thị
+    FINAL:    Khuố, Thị
+    +PhoBERT: Khuố, Thị
+    CER: raw=0.8261 san=0.8261 final=0.8261 phobert=0.8261
+    WER: final=0.9091 phobert=0.9091
+
+================================================================================
+SECTION 5: INTERESTING METRIC RELATIONSHIPS
+================================================================================
+
+  5a. Perfect RAW degraded by post-processing: 23 samples
+      Top 5:
+
+  [DEGRADED] idx=2670 domain=printed cat=MINOR_ERROR
+    GT:       huyện Kiến Thụy.
+    RAW:      huyện Kiến Thụy.
+    SANITIZ:  huyện Kiến Thụy.
+    FINAL:    huyện Kiến Thuỵ
+    +PhoBERT: huyện Kiến Thuỵ
+    CER: raw=0.0000 san=0.0000 final=0.1875 phobert=0.1875
+    WER: final=0.3333 phobert=0.3333
+    NOTE: RAW was perfect, final CER=0.1875
+
+  [DEGRADED] idx=3180 domain=printed cat=MINOR_ERROR
+    GT:       nằm trong 7 quận nội thành.
+    RAW:      nằm trong 7 quận nội thành.
+    SANITIZ:  nằm trong 7 quận nội thành.
+    FINAL:    nằm trong 7 quận Núi Thành
+    +PhoBERT: nằm trong 7 quận Núi Thành
+    CER: raw=0.0000 san=0.0000 final=0.1481 phobert=0.1481
+    WER: final=0.3333 phobert=0.3333
+    NOTE: RAW was perfect, final CER=0.1481
+
+  [DEGRADED] idx=470 domain=printed cat=MINOR_ERROR
+    GT:       bọn họ an trí ở tỉnh Quảng Tây.
+    RAW:      bọn họ an trí ở tỉnh Quảng Tây.
+    SANITIZ:  bọn họ an trí ở tỉnh Quảng Tây.
+    FINAL:    bọn họ an trí ở tỉnh Quảng Trị
+    +PhoBERT: bọn họ an trí ở tỉnh Quảng Trị
+    CER: raw=0.0000 san=0.0000 final=0.0968 phobert=0.0968
+    WER: final=0.1250 phobert=0.1250
+    NOTE: RAW was perfect, final CER=0.0968
+
+  [DEGRADED] idx=2863 domain=printed cat=MINOR_ERROR
+    GT:       Kết quả là có rất nhiều chủng loại, hình dạng
+    RAW:      Kết quả là có rất nhiều chủng loại, hình dạng
+    SANITIZ:  Kết quả là có rất nhiều chủng loại, hình dạng
+    FINAL:    Kết quả là có rất nhiều chủng loại, Bình Dương
+    +PhoBERT: Kết quả là có rất nhiều chủng loại, Bình Dương
+    CER: raw=0.0000 san=0.0000 final=0.0889 phobert=0.0889
+    WER: final=0.2000 phobert=0.2000
+    NOTE: RAW was perfect, final CER=0.0889
+
+  [DEGRADED] idx=3529 domain=printed cat=MINOR_ERROR
+    GT:       đường Hồ Chí Minh tại xã Khâm Đức.
+    RAW:      đường Hồ Chí Minh tại xã Khâm Đức.
+    SANITIZ:  đường Hồ Chí Minh tại xã Khâm Đức.
+    FINAL:    đường Hồ Chí Minh tại xã Châu Đức
+    +PhoBERT: đường Hồ Chí Minh tại xã Châu Đức
+    CER: raw=0.0000 san=0.0000 final=0.0882 phobert=0.0882
+    WER: final=0.2500 phobert=0.2500
+    NOTE: RAW was perfect, final CER=0.0882
+
+  5b. Huge sanitizer improvement (CER delta > 0.3): 20 samples
+      Top 5:
+
+  [HUGE_SAN] idx=3190 domain=printed cat=PERFECT
+    GT:       phong cách Gô loa...
+    RAW:      phong cách Gô loa.......................................................................................................
+    SANITIZ:  phong cách Gô loa...
+    FINAL:    phong cách Gô loa...
+    +PhoBERT: phong cách Gô loa...
+    CER: raw=11.7000 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+    NOTE: Sanitizer CER delta: 11.7000
+
+  [HUGE_SAN] idx=2373 domain=printed cat=PERFECT
+    GT:       rìa lưỡi ngang, nạo,...
+    RAW:      rìa lưỡi ngang, nạo,....................................................................................................
+    SANITIZ:  rìa lưỡi ngang, nạo,...
+    FINAL:    rìa lưỡi ngang, nạo,...
+    +PhoBERT: rìa lưỡi ngang, nạo,...
+    CER: raw=10.0435 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+    NOTE: Sanitizer CER delta: 10.0435
+
+  [HUGE_SAN] idx=2545 domain=printed cat=PERFECT
+    GT:       "Đá trông chồng" của Lê Minh Sơn,...
+    RAW:      "Đá trông chồng" của Lê Minh Sơn,.......................................................................................
+    SANITIZ:  "Đá trông chồng" của Lê Minh Sơn,...
+    FINAL:    "Đá trông chồng" của Lê Minh Sơn,...
+    +PhoBERT: " Đá trông chồng " của Lê Minh Sơn,...
+    CER: raw=6.0556 san=0.0000 final=0.0000 phobert=0.0556
+    WER: final=0.0000 phobert=0.5714
+    NOTE: Sanitizer CER delta: 6.0556
+
+  [HUGE_SAN] idx=377 domain=printed cat=HALLUCINATION_LOOP
+    GT:       quân sang đây... Phỏng chừng nhà nước chịu được mấy phen
+    RAW:      quân sang đây...........................................................................................................
+    SANITIZ:  quân sang đây...
+    FINAL:    quân sang đây...
+    +PhoBERT: quân sang đây...
+    CER: raw=4.2500 san=0.7143 final=0.7143 phobert=0.7143
+    WER: final=0.7273 phobert=0.7273
+    NOTE: Sanitizer CER delta: 3.5357
+
+  [HUGE_SAN] idx=109 domain=handwritten cat=HALLUCINATION_LOOP
+    GT:       văn hóa. Tiếp tục tập trung nguồn lực cho chương trình 3 giảm...
+    RAW:      văn hóa. Tiếp tục tập trong nguồn lực cho đương trình 3 giảm............................................................
+    SANITIZ:  văn hóa. Tiếp tục tập trong nguồn lực cho đương trình 3 giảm...
+    FINAL:    văn hóa. Tiếp tục tập trong nguồn lực cho đương trình 3 giảm...
+    +PhoBERT: văn hóa. Tiếp tục tập trong nguồn lực cho đương trình 3 giảm...
+    CER: raw=3.0312 san=0.0469 final=0.0469 phobert=0.0469
+    WER: final=0.1538 phobert=0.1538
+    NOTE: Sanitizer CER delta: 2.9843
+
+  5c. Large PhoBERT divergence (|delta| > 0.05): 84 samples
+      Top 5:
+
+  [PhoBERT WORSE] idx=1238 domain=printed cat=PERFECT
+    GT:       mình".
+    RAW:      mình".
+    SANITIZ:  mình".
+    FINAL:    mình".
+    +PhoBERT: mình ".
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1667
+    WER: final=0.0000 phobert=2.0000
+    NOTE: |delta|=0.1667
+
+  [PhoBERT WORSE] idx=1536 domain=printed cat=PERFECT
+    GT:       được".
+    RAW:      được".
+    SANITIZ:  được".
+    FINAL:    được".
+    +PhoBERT: được ".
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1667
+    WER: final=0.0000 phobert=2.0000
+    NOTE: |delta|=0.1667
+
+  [PhoBERT WORSE] idx=2682 domain=printed cat=PERFECT
+    GT:       Trong đó, "Da" là "sông"
+    RAW:      Trong đó, "Da" là "sông"
+    SANITIZ:  Trong đó, "Da" là "sông"
+    FINAL:    Trong đó, "Da" là "sông"
+    +PhoBERT: Trong đó, " Da " là " sông "
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1667
+    WER: final=0.0000 phobert=1.2000
+    NOTE: |delta|=0.1667
+
+  [PhoBERT WORSE] idx=3738 domain=printed cat=PERFECT
+    GT:       "Nguyên đán"
+    RAW:      "Nguyên đán"
+    SANITIZ:  "Nguyên đán"
+    FINAL:    "Nguyên đán"
+    +PhoBERT: " Nguyên đán "
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1667
+    WER: final=0.0000 phobert=2.0000
+    NOTE: |delta|=0.1667
+
+  [PhoBERT WORSE] idx=426 domain=printed cat=PERFECT
+    GT:       phát lương ăn áo mặc.
+    RAW:      phát lương ăn áo mặc.
+    SANITIZ:  phát lương ăn áo mặc.
+    FINAL:    phát lương ăn áo mặc.
+    +PhoBERT: phát lương ăn, mặc.
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.1429
+    WER: final=0.0000 phobert=0.4000
+    NOTE: |delta|=0.1429
+
+  5d. Handwritten PERFECT predictions: 109 samples
+      (showing 3 examples)
+
+  [HW_PERFECT] idx=36 domain=handwritten cat=PERFECT
+    GT:       con " không dám kêu mà thôi!
+    RAW:      con " không dám kêu mà thôi!
+    SANITIZ:  con " không dám kêu mà thôi!
+    FINAL:    con " không dám kêu mà thôi!
+    +PhoBERT: con " không dám kêu mà thôi!
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+
+  [HW_PERFECT] idx=45 domain=handwritten cat=PERFECT
+    GT:       có hành vi sai trái và những người bao che. Thực hiện tốt các quy định
+    RAW:      có hành vi sai trái và những người bao che. Thực hiện tốt các quy định
+    SANITIZ:  có hành vi sai trái và những người bao che. Thực hiện tốt các quy định
+    FINAL:    có hành vi sai trái và những người bao che. Thực hiện tốt các quy định
+    +PhoBERT: có hành vi sai trái và những người bao che. Thực hiện tốt các quy định
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+
+  [HW_PERFECT] idx=58 domain=handwritten cat=PERFECT
+    GT:       cao, có phẩm chất, đạo đức. Kiểm tra, xử lý kiên quyết các vụ
+    RAW:      cao, có phẩm chất, đạo đức. Kiểm tra, xử lý kiên quyết các vụ
+    SANITIZ:  cao, có phẩm chất, đạo đức. Kiểm tra, xử lý kiên quyết các vụ
+    FINAL:    cao, có phẩm chất, đạo đức. Kiểm tra, xử lý kiên quyết các vụ
+    +PhoBERT: cao, có phẩm chất, đạo đức. Kiểm tra, xử lý kiên quyết các vụ
+    CER: raw=0.0000 san=0.0000 final=0.0000 phobert=0.0000
+    WER: final=0.0000 phobert=0.0000
+
+================================================================================
+SECTION 6: WORST CASES (Top 10)
+================================================================================
+
+  [WORST #1] domain=handwritten cat=TRUNCATION
+    GT:    Khu 5, Thị trấn Kỳ Sơn, Huyện Kỳ Sơn, Hòa Bình
+    RAW:   Khuố, Thị
+    FINAL: Khuố, Thị
+    CER: raw=0.8261 san=0.8261 final=0.8261
+
+  [WORST #2] domain=handwritten cat=SUBSTITUTION
+    GT:    Số nhà 6, hẻm 124/22/53 âu Cơ, Phường Tứ Liên, Quận Tây Hồ, Hà Nội
+    RAW:   Số Tiền Đà, F9, Quận 5, TP Hồ Chí Minh
+    FINAL: Số Tiền Đà, F9, Quận 5, TP Hồ Chí Minh
+    CER: raw=0.7727 san=0.7727 final=0.7727
+
+  [WORST #3] domain=printed cat=HALLUCINATION_LOOP
+    GT:    quân sang đây... Phỏng chừng nhà nước chịu được mấy phen
+    RAW:   quân sang đây...........................................................................................................
+    FINAL: quân sang đây...
+    CER: raw=4.2500 san=0.7143 final=0.7143
+
+  [WORST #4] domain=handwritten cat=SUBSTITUTION
+    GT:    Hoá Thượng, Huyện Đồng Hỷ, Thái Nguyên
+    RAW:   Hoà Thực vợi, ĐDND Y Cộn Đồng ty, Ứn Nguyễn
+    FINAL: Hoà Thực vợi, ĐDND Y Cộn Đồng ty, Ứn Nguyễn
+    CER: raw=0.6053 san=0.6053 final=0.6053
+
+  [WORST #5] domain=handwritten cat=SUBSTITUTION
+    GT:    Số 339, phố Huế, Phường Phố Huế, Quận Hai Bà Trưng, Hà Nội
+    RAW:   Chong cố 739, phố thiếng Phường Phồ Đe Lê Quận đà Trương 15/002
+    FINAL: Chong cố 739, phố thiếng Phường Phồ Đe Lê Quận đà Trương 15/002
+    CER: raw=0.5517 san=0.5517 final=0.5517
+
+  [WORST #6] domain=handwritten cat=SUBSTITUTION
+    GT:    Một món quà ý nghĩa hơn cả những món quà quý giá, hạnh phúc ấy long lanh in trong mắt
+    RAW:   một nói giảa làm " cả dũng má quà ýy góp. hoà phúc ấy bị doái - Lo chong đót
+    FINAL: một nói giảa làm " cả dũng má quà ýy góp. hoà phúc ấy bị doái - Lo chong đót
+    CER: raw=0.5294 san=0.5294 final=0.5294
+
+  [WORST #7] domain=handwritten cat=SUBSTITUTION
+    GT:    Số 49, ngõ 93, phố 8/3, Phường Quỳnh Mai, Quận Hai Bà Trưng, Hà Nội
+    RAW:   Số 47, ngõ 5 93, Phố I7 / TP Uy Côn Muyệnh Ma, Quận và kim, Hời
+    FINAL: Số 47, ngõ 5 93, Phố I7 / TP Uy Côn Muyệnh Ma, Quận và kim, Hời
+    CER: raw=0.5075 san=0.5075 final=0.5075
+
+  [WORST #8] domain=printed cat=SUBSTITUTION
+    GT:    Quyển VI
+    RAW:   QUYỂN VI
+    FINAL: QUYỂN VI
+    CER: raw=0.5000 san=0.5000 final=0.5000
+
+  [WORST #9] domain=handwritten cat=SUBSTITUTION
+    GT:    Số 39 ngõ 23 phố Đỗ Quang, Phường Trung Hoà, Quận Cầu Giấy, Hà Nội
+    RAW:   ở Độ Người F Quan, Hoàng Trung Hò, Gòm Cầu Gốn, HồNG
+    FINAL: ở Độ Người F Quan, Hoàng Trung Hò, Gòm Cầu Gốn, HồNG
+    CER: raw=0.5000 san=0.5000 final=0.5000
+
+  [WORST #10] domain=handwritten cat=SUBSTITUTION
+    GT:    Số 127H Thụy Khuê, Phường Thuỵ Khuê, Quận Tây Hồ, Hà Nội
+    RAW:   Số 127 Thực, Khuêng thôy Quy sao? Quận Một tây Hồ, Nội
+    FINAL: Số 127 Thực, Khuêng thôy Quy sao? Quận Một tây Hồ, Nội
+    CER: raw=0.4821 san=0.4821 final=0.4821
+
+================================================================================
+SECTION 7: PIPELINE STAGE-BY-STAGE STATISTICS
+================================================================================
+
+  PRINTED (3739 samples):
+    Stage            Avg CER    Perfect
+    ─────────────    ───────    ───────
+    Raw TrOCR        0.022937   2566 (68.6%)
+    + Sanitizer      0.011186   2583 (69.1%)
+    + Addr Correct   0.011624   2562 (68.5%)
+    + PhoBERT path   0.015376   2360 (63.1%)
+
+  HANDWRITTEN (738 samples):
+    Stage            Avg CER    Perfect
+    ─────────────    ───────    ───────
+    Raw TrOCR        0.117632     66 (8.9%)
+    + Sanitizer      0.109065     66 (8.9%)
+    + Addr Correct   0.099973    109 (14.8%)
+    + PhoBERT path   0.100649    108 (14.6%)

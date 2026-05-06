@@ -35,7 +35,8 @@ Fine tuning/checkpoints/**
 # Ignore everything inside output/ but keep the folder
 Generate Synthetic Printed Data/output/**
 !Generate Synthetic Printed Data/output/.gitkeep
-
+Generate Synthetic Printed Data/corpus/**
+!Generate Synthetic Printed Data/corpus/.gitkeep
 
 # ============================================================
 # MODEL & TRAINING ARTIFACTS (global)

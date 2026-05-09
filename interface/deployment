@@ -1,0 +1,113 @@
+# Vietnamese OCR — Colab Deployment Guide
+
+> [!IMPORTANT]
+> Before running, upload the `interface/` folder to your Google Drive at:
+> `My Drive/OCR/interface/`
+
+## Drive Structure (Required)
+
+```
+My Drive/OCR/
+├── checkpoints/final_model/    ← TrOCR model (already there)
+├── code/                       ← Existing training/eval code (already there)
+│   ├── eval_utils.py
+│   ├── address_corrector.py
+│   ├── data/
+│   │   ├── dataset.py
+│   │   └── vietnam_gazetteer.json
+│   └── ...
+└── interface/                  ← NEW — upload this folder
+    ├── app.py
+    ├── pipeline.py
+    ├── requirements.txt
+    └── modules/
+        ├── __init__.py
+        ├── preprocessor.py
+        ├── text_detector.py
+        ├── line_segmenter.py
+        ├── text_recognizer.py
+        └── post_processor.py
+```
+
+---
+
+## Cell 1 — Mount Drive & Copy Code
+
+```python
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Cell 1: Mount Google Drive & Copy code to local SSD (faster I/O)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+from google.colab import drive
+drive.mount('/content/drive')
+
+import os
+
+# Copy the training/eval code to local SSD
+!cp -r "/content/drive/MyDrive/OCR/code" "/content/trocr_viet"
+
+# Copy the interface into the code directory (so it can find eval_utils.py)
+!cp -r "/content/drive/MyDrive/OCR/interface" "/content/trocr_viet/interface"
+
+# Ensure __init__.py files exist
+!touch /content/trocr_viet/data/__init__.py
+!touch /content/trocr_viet/core/__init__.py
+
+# Verify structure
+print("✅ Code directory:")
+!ls /content/trocr_viet/
+print("\n✅ Interface directory:")
+!ls /content/trocr_viet/interface/
+print("\n✅ Interface modules:")
+!ls /content/trocr_viet/interface/modules/
+print("\n✅ Gazetteer check:")
+!ls -lh /content/trocr_viet/data/vietnam_gazetteer.json
+print("\n✅ Model check:")
+!ls /content/drive/MyDrive/OCR/checkpoints/final_model/ | head -5
+```
+
+## Cell 2 — Install Dependencies
+
+```python
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Cell 2: Install all dependencies
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Core dependencies
+!pip install -q gradio transformers Pillow opencv-python-headless \
+    scikit-learn pyvi jiwer
+
+# mmocr for DBNet++ text detection
+!pip install -q -U openmim
+!mim install -q mmengine mmcv mmdet mmocr
+
+print("✅ All dependencies installed!")
+```
+
+## Cell 3 — Launch the Interface
+
+```python
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Cell 3: Launch Vietnamese OCR Web Interface
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+%cd /content/trocr_viet/interface
+
+!python app.py \
+    --model_path /content/drive/MyDrive/OCR/checkpoints/final_model \
+    --share
+```
+
+> [!TIP]
+> The `--share` flag creates a **public Gradio link** (valid for 72h) that you can share with your thesis committee. The link will appear in the output like:
+> `Running on public URL: https://xxxxx.gradio.live`
+
+---
+
+## Troubleshooting
+
+| Issue | Fix |
+|---|---|
+| `ModuleNotFoundError: mmocr` | Run Cell 2 again, or skip — the app falls back to full-image mode |
+| `CUDA out of memory` | Reduce batch size in the UI (default 8 → try 4) |
+| `eval_utils not found` | Verify `/content/trocr_viet/eval_utils.py` exists |
+| `Gazetteer not found` | Verify `/content/trocr_viet/data/vietnam_gazetteer.json` exists |
+| `Model not found` | Check the model path points to the correct Drive folder |

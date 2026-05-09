@@ -1,0 +1,22 @@
+# Core
+torch>=2.0
+transformers>=4.35
+Pillow>=9.0
+numpy>=1.20
+
+# UI
+gradio>=4.0
+
+# Image processing
+opencv-python-headless>=4.5
+
+# Line segmentation
+scikit-learn>=1.0
+
+# Text detection (DBNet++)
+# Install mmocr AFTER torch: pip install mmocr mmdet mmcv mmengine
+# mmocr>=1.0
+
+# Post-processing
+pyvi
+jiwer

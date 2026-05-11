@@ -80,6 +80,7 @@ records = {}
 current_phase = None
 last_key = None
 epoch_timestamps = {}  # key -> datetime, for computing runtime from timestamps
+restarted_epochs = set()  # keys that were run twice (Colab restart)
 
 with open(LOG_PATH, "r", encoding="utf-8", errors="ignore") as f:
     lines = f.readlines()
@@ -116,6 +117,9 @@ for line in lines:
         epoch = int(m.group(1))
         avg_loss = float(m.group(2))
         key = ("stage2a", "2a", epoch)
+        # Detect Colab restart: same epoch key seen before
+        if key in epoch_timestamps:
+            restarted_epochs.add(key)
         records[key] = {
             "stage": "stage2a",
             "phase": "2a",
@@ -128,7 +132,7 @@ for line in lines:
             "hw_wer": None,
         }
         last_key = key
-        # Capture timestamp for runtime computation
+        # Capture timestamp for runtime computation (keeps last occurrence)
         ts_match = re_timestamp.match(line)
         if ts_match:
             epoch_timestamps[key] = datetime.strptime(ts_match.group(1), "%Y-%m-%d %H:%M:%S")
@@ -206,11 +210,15 @@ for stage_name in ["stage2a", "stage2b"]:
     for i in range(len(stage_keys)):
         key = stage_keys[i]
         if i == 0:
-            # First epoch: no previous timestamp, skip or estimate
+            # First epoch: no previous timestamp, skip
             continue
         prev_key = stage_keys[i - 1]
         # Skip if same epoch (duplicate from Colab restart)
         if key[2] == prev_key[2]:
+            continue
+        # Skip if previous epoch was restarted — delta includes restart overhead
+        if prev_key in restarted_epochs:
+            print(f"  [Runtime] Skipping {key} — previous epoch {prev_key} was restarted (Colab)")
             continue
         delta = (epoch_timestamps[key] - epoch_timestamps[prev_key]).total_seconds()
         # Only use reasonable deltas (< 6 hours, to filter out overnight gaps)

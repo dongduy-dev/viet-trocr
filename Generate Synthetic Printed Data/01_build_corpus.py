@@ -605,7 +605,7 @@ def build_corpus(skip_wiki: bool = False, min_sentences: int = 5000,
     print("01_build_corpus.py  -  Building Vietnamese corpus")
     print("=" * 60)
     print(f"  Max chars per line: {max_chars} "
-          f"(critical for TrOCR 384x384 input)")
+          f"(critical for TrOCR 128x1536 input)")
 
     all_sentences = []
 
@@ -674,7 +674,7 @@ def build_corpus(skip_wiki: bool = False, min_sentences: int = 5000,
     print(f"\n  Before length filter: {len(normalized)} unique sentences")
 
     # ── LENGTH CONTROL: Split long sentences for TrOCR compatibility ─────
-    # TrOCR input is 384x384. Long text rendered at readable font sizes
+    # TrOCR input is 128×1536. Long text rendered at readable font sizes
     # produces images far too wide, causing resize artifacts.
     # Split long sentences at natural Vietnamese break points.
     too_long = sum(1 for s in normalized if len(s) > max_chars)

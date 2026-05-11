@@ -5,7 +5,8 @@ corpus:
   # Số câu tối thiểu trong corpus (built-in corpus có ~3000 câu sẵn)
   min_sentences: 2000
   # Bao gồm niits legal labels đã lọc sạch
-  include_niits: true
+  # include_niits: true
+  include_niits: false  # DISABLED — typos and random spacing corrupt decoder
   niits_clean_path: "../Data Processing/niits_legal_ocr/niits_clean_labels.txt"
 
 fonts:

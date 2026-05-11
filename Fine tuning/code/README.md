@@ -484,7 +484,7 @@ L_total = L_CrossEntropy + (λ/2) × Σᵢ Fᵢ(θᵢ - θ*ᵢ)²
 
 Where:
 - `Fᵢ` = Fisher Information for parameter `i` (importance for printed OCR),
-  estimated over 200 printed batches at the end of Stage 2a.
+  estimated over 1000 printed batches at the end of Stage 2a.
 - `θ*ᵢ` = Stage 2a best checkpoint weights (the "anchor" we must not drift from).
 - `θᵢ` = current weights being updated in Stage 2b.
 

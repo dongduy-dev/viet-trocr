@@ -1,0 +1,119 @@
+{
+  "description": "Multi-tier Baseline Benchmarking — Vietnamese OCR",
+  "test_data": {
+    "printed_samples": 3739,
+    "handwritten_samples": 738,
+    "total": 4477
+  },
+  "trocr_reference": {
+    "model_name": "TrOCR (ViT + Decoder) — Fine-tuned",
+    "overall": {
+      "cer": 0.0286,
+      "wer": 0.0792,
+      "total_samples": 4477
+    },
+    "per_domain": {
+      "printed": {
+        "cer": 0.0117,
+        "wer": 0.0396,
+        "perfect_pct": 68.5
+      },
+      "handwritten": {
+        "cer": 0.1057,
+        "wer": 0.2628,
+        "perfect_pct": 14.8
+      }
+    },
+    "total_params": "~337M (ViT-base + RoBERTa decoder)"
+  },
+  "baselines": {
+    "vietocr": {
+      "model_name": "VietOCR (VGG-Transformer)",
+      "per_domain": {
+        "handwritten": {
+          "cer": 0.23548982367953894,
+          "wer": 0.5886188320016636,
+          "samples": 738,
+          "fps": 2.3,
+          "avg_inference_ms": 439.91,
+          "categories": {
+            "MINOR_ERROR": 536,
+            "SUBSTITUTION": 199,
+            "PERFECT": 2,
+            "INSERTION": 1
+          },
+          "perfect_count": 2,
+          "perfect_pct": 0.3
+        },
+        "printed": {
+          "cer": 0.030350980004831447,
+          "wer": 0.10140797179996582,
+          "samples": 3739,
+          "fps": 2.5,
+          "avg_inference_ms": 396.62,
+          "categories": {
+            "PERFECT": 1689,
+            "MINOR_ERROR": 2020,
+            "TRUNCATION": 16,
+            "SUBSTITUTION": 14
+          },
+          "perfect_count": 1689,
+          "perfect_pct": 45.2
+        }
+      },
+      "overall": {
+        "cer": 0.06416658568540641,
+        "wer": 0.18172104189798974,
+        "total_samples": 4477
+      },
+      "parameter_count": {
+        "total": 37650217,
+        "trainable": 37650217
+      }
+    },
+    "crnn": {
+      "model_name": "CRNN-Seq2Seq (vgg_seq2seq)",
+      "per_domain": {
+        "handwritten": {
+          "cer": 0.5926712180837007,
+          "wer": 0.9348311238534144,
+          "samples": 738,
+          "fps": 9.5,
+          "avg_inference_ms": 105.07,
+          "categories": {
+            "MINOR_ERROR": 228,
+            "SUBSTITUTION": 421,
+            "INSERTION": 71,
+            "TRUNCATION": 18
+          },
+          "perfect_count": 0,
+          "perfect_pct": 0.0
+        },
+        "printed": {
+          "cer": 0.05471250168557322,
+          "wer": 0.15011210246216417,
+          "samples": 3739,
+          "fps": 13.3,
+          "avg_inference_ms": 75.4,
+          "categories": {
+            "MINOR_ERROR": 2504,
+            "PERFECT": 1191,
+            "INSERTION": 3,
+            "SUBSTITUTION": 41
+          },
+          "perfect_count": 1191,
+          "perfect_pct": 31.9
+        }
+      },
+      "overall": {
+        "cer": 0.14339097671389978,
+        "wer": 0.27946717009377975,
+        "total_samples": 4477
+      },
+      "parameter_count": {
+        "total": 22371113,
+        "trainable": 22371113
+      }
+    }
+  }
+}

@@ -142,7 +142,19 @@ pip install Pillow tqdm scikit-learn lmdb
 
 ## Dataset Download
 
-Before running the pipeline, you need to download the raw datasets and place them in the correct directory structure.
+### Option A — Download Pre-built LMDB (Skip the entire pipeline)
+
+If you want to **skip data processing entirely** and jump straight to training/evaluation, download the ready-to-use LMDB databases:
+
+📁 **[Google Drive — Pre-built LMDB](https://drive.google.com/drive/folders/1ejkt0MrcPWXWn5pDO4QnJ6NWrOzXM0YQ?usp=sharing)**
+
+Copy the contents to your Google Drive at `My Drive/OCR/lmdb/` and proceed directly to the [Fine tuning README](../Fine%20tuning/code/README.md).
+
+---
+
+### Option B — Build from Raw Data
+
+If you want to run the full data processing pipeline, download the raw datasets and place them in the correct directory structure.
 
 ### Download Links
 

@@ -218,6 +218,9 @@ My Drive/OCR/
 └── logs/                       ← Training logs
 ```
 
+> **Don't have LMDB yet?** Download the pre-built databases directly:
+> 📁 [Google Drive — Pre-built LMDB](https://drive.google.com/drive/folders/1ejkt0MrcPWXWn5pDO4QnJ6NWrOzXM0YQ?usp=sharing)
+> Place them at `My Drive/OCR/lmdb/`. See [Data Processing README](../../Data%20Processing/README.md) for details.
 ### Setup Cells (run at the start of every Colab session)
 
 **Cell 1 — Mount Drive + Copy LMDB to local SSD:**

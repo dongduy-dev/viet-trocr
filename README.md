@@ -273,6 +273,14 @@ The training pipeline consolidates **7 Vietnamese text datasets** spanning both 
 
 All datasets are normalized to Unicode NFC, filtered for Vietnamese-only characters (10 Unicode ranges), dimension-filtered, and exported to LMDB format. See the [Data Processing README](Data%20Processing/README.md) for full details.
 
+### Downloads
+
+| Resource | Description | Link |
+|---|---|---|
+| 📁 **Pre-built LMDB** | Ready-to-use training/test databases (skip data processing) | [Google Drive](https://drive.google.com/drive/folders/1ejkt0MrcPWXWn5pDO4QnJ6NWrOzXM0YQ?usp=sharing) |
+| 📦 Raw Printed Data | VinText, MC-OCR 2021, Anyuuus, Synthetic_Modern (~2.52 GB) | [Google Drive](https://drive.google.com/file/d/1Z-2pMTMPLuihWYU0pJYIVb1AvbWlJPha/view) |
+| 📦 Raw Handwritten Data | UIT-HWDB, Cinnamon AI, Viet-Wiki-Handwriting (~3.09 GB) | [Google Drive](https://drive.google.com/file/d/10W3zPtEGnAXk4XhjHr4motOWxBbuJe3m/view) |
+
 ---
 
 ## Research Questions & Key Findings

@@ -205,8 +205,29 @@ Vietnamese-TrOCR/
 git clone https://github.com/dongduy-dev/viet-trocr.git
 cd viet-trocr
 ```
+### 2. Download Pre-trained Model & Results
 
-### 2. Open the Colab Notebook
+The fine-tuned model, training checkpoints, evaluation results, and source code are hosted on Google Drive:
+
+📁 **[Google Drive — OCR Project Files](https://drive.google.com/drive/folders/1xjLg5rNRuZVtv7umXdsG0qRbFWvA7ToA)**
+
+```
+OCR/
+├── code/                   ← Training pipeline source code
+├── interface/              ← Inference web application
+├── lmdb/                   ← LMDB training/test databases
+├── checkpoints/
+│   ├── final_model/        ← Exported HuggingFace model (ready for inference)
+│   ├── evaluation/         ← TrOCR evaluation results (metrics_summary.json, etc.)
+│   ├── baseline_eval/      ← VietOCR & CRNN benchmark results
+│   ├── stage2b_best.pt     ← Best training checkpoint (~4.31 GB)
+│   └── ewc_state.pt        ← Fisher Information state (~2.87 GB)
+└── logs/                   ← Training logs
+```
+
+> Copy the entire `OCR/` folder to your Google Drive under `My Drive/OCR/` to use with the Colab notebook.
+
+### 3. Open the Colab Notebook
 
 The primary entry point for all operations is **`Viet_TrOCR.ipynb`** (at the repository root).
 Upload it to Google Colab and use the appropriate section:
@@ -219,7 +240,7 @@ Upload it to Google Colab and use the appropriate section:
 | **MANUAL FINAL MODEL EXPORT** | Export best checkpoint to HuggingFace format | ~5 min |
 | **INTERFACE** | Launch Gradio web UI for live OCR inference | Instant |
 
-### 3. Component READMEs
+### 4. Component READMEs
 
 For detailed documentation on each module:
 

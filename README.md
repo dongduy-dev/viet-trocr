@@ -147,7 +147,7 @@ Vietnamese-TrOCR/
 │   │   └── post_processor.py             Sanitizer + Address + PhoBERT
 │   └── 📄 README.md                     ← Interface & deployment guide
 │
-└── 📂 Report/                            Thesis document & figures
+└── 📂 Report/                            Project document & figures
     └── REPORT.docx
 ```
 
@@ -202,8 +202,8 @@ Vietnamese-TrOCR/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/dongduy-dev/TrOCR.git
-cd TrOCR
+git clone https://github.com/dongduy-dev/viet-trocr.git
+cd viet-trocr
 ```
 
 ### 2. Navigate to Component READMEs
@@ -280,10 +280,3 @@ If you use this work in your research, please cite:
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
-> **To create the LICENSE file:** Go to your GitHub repo → click **Add file** → **Create new file** → type `LICENSE` as the filename → GitHub will show a **"Choose a license template"** button on the right → select **MIT License** → fill in your name → click **Commit**. Alternatively, create it locally:
->
-> ```bash
-> curl -o LICENSE https://opensource.org/licenses/MIT
-> # Then edit the file to add: Copyright (c) 2026 Huynh Kien Dong Duy
-> ```

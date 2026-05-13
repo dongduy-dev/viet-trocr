@@ -223,7 +223,7 @@ def create_ui(default_model_path: str = ""):
             <div style="padding: 16px 0 8px 0;">
                 <div class="main-title">🔍 Vietnamese OCR System</div>
                 <div class="subtitle">
-                    End-to-End Pipeline: Preprocessing → DBNet++ → DBSCAN → TrOCR → Post-processing
+                    End-to-End Pipeline: Preprocessing → DBNet → DBSCAN → TrOCR → Post-processing
                 </div>
             </div>
         """)
@@ -283,7 +283,7 @@ def create_ui(default_model_path: str = ""):
                 preproc_image = gr.Image(label="Enhanced Image", height=300)
                 deskew_info = gr.Markdown()
 
-        with gr.Accordion("② Step 2: Text Detection (DBNet++)", open=True):
+        with gr.Accordion("② Step 2: Text Detection (DBNet)", open=True):
             detection_info = gr.Markdown()
             detection_image = gr.Image(label="Detected Text Regions", height=400)
 
@@ -338,7 +338,7 @@ def create_ui(default_model_path: str = ""):
         gr.HTML("""
             <div style="text-align:center; padding:16px; color:#9ca3af; font-size:0.85em;">
                 Vietnamese TrOCR OCR System — Graduation Thesis Project<br>
-                Pipeline: CLAHE + Hough Deskew → DBNet++ → DBSCAN → TrOCR → PhoBERT/Address Correction
+                Pipeline: CLAHE + Hough Deskew → DBNet → DBSCAN → TrOCR → PhoBERT/Address Correction
             </div>
         """)
 

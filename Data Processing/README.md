@@ -1,43 +1,43 @@
 # Data Processing Pipeline
 
-Tài liệu hướng dẫn cho phần tiền xử lý dữ liệu của dự án **Nhận dạng Chữ viết tay & Chữ in Tiếng Việt (HTR/OCR)** sử dụng kiến trúc TrOCR.
+Documentation for the data preprocessing component of the **Vietnamese Handwritten & Printed Text Recognition (HTR/OCR)** project using the TrOCR architecture.
 
 ---
 
-## Tổng quan
+## Overview
 
-Pipeline gồm 4 script chạy tuần tự, chuyển đổi dữ liệu thô từ 7 nguồn khác nhau thành các LMDB database sẵn sàng để huấn luyện TrOCR.
+The pipeline consists of 4 scripts executed sequentially, converting raw data from 7 different sources into LMDB databases ready for TrOCR training.
 
 ```
 raw_data/  →  [parse]  →  processed/  →  [split]  →  [filter]  →  [export]  →  lmdb/
 ```
 
-| Script | Vai trò | Input | Output |
+| Script | Role | Input | Output |
 |---|---|---|---|
-| `01_parse_all_datasets.py` | Thu thập, chuẩn hóa, copy ảnh | `raw_data/` | `processed/`, `vocab/` |
-| `02_split.py` | Phân chia train/val/test | `labels_master.csv` | `labels_split.csv` |
-| `03_filter_outliers.py` | Lọc outlier theo kích thước | `labels_split.csv` | `labels_filtered.csv` |
-| `04_export_lmdb.py` | Đóng gói LMDB cho TrOCR | `labels_filtered.csv` + ảnh | `lmdb/` |
+| `01_parse_all_datasets.py` | Collect, normalize, copy images | `raw_data/` | `processed/`, `vocab/` |
+| `02_split.py` | Split into train/val/test | `labels_master.csv` | `labels_split.csv` |
+| `03_filter_outliers.py` | Filter outliers by dimensions | `labels_split.csv` | `labels_filtered.csv` |
+| `04_export_lmdb.py` | Package LMDB for TrOCR | `labels_filtered.csv` + images | `lmdb/` |
 
-**Scripts phụ trợ:**
+**Auxiliary Scripts:**
 
-| Script | Vai trò |
+| Script | Role |
 |---|---|
-| `05_verify_lmdb.py` | Kiểm tra nhanh LMDB đã export |
-| `06_source_based_analysis.py` | Phân tích phân bố kích thước ảnh theo nguồn |
+| `05_verify_lmdb.py` | Quick verification of exported LMDB |
+| `06_source_based_analysis.py` | Analyze image dimension distribution by source |
 
 ---
 
-## Cấu trúc thư mục
+## Directory Structure
 
 ```
 Data Processing/
 ├── raw_data/
 │   ├── HandWritten/
 │   │   ├── Cinnamon_AI_Dataset/
-│   │   │   ├── Data1/              (~15 ảnh  – Val)
-│   │   │   ├── Data2/              (~1.823 ảnh – Train)
-│   │   │   └── Private_Test/       (~549 ảnh – Test)
+│   │   │   ├── Data1/              (~15 images – Val)
+│   │   │   ├── Data2/              (~1,823 images – Train)
+│   │   │   └── Private_Test/       (~549 images – Test)
 │   │   ├── UIT_HWDB/
 │   │   │   ├── UIT_HWDB_word/
 │   │   │   │   ├── train_data/     (writer 1–249)
@@ -49,33 +49,33 @@ Data Processing/
 │   │   │       ├── train_data/     (writer 1–249)
 │   │   │       └── test_data/      (writer 250–255)
 │   │   └── viet_wiki/
-│   │       ├── images/             (~5.796 ảnh tổng hợp)
+│   │       ├── images/             (~5,796 synthetic images)
 │   │       ├── labels.csv
 │   │       └── downloadscript.py
 │   └── Printed/
 │       ├── VinText_Cropped/
-│       │   ├── train_images/ (~ 25794 ảnh)
-│       │   ├── test_image/ (~ 7220 ảnh)
-│       │   └── unseen_test_images/ (~ 10086 ảnh)
+│       │   ├── train_images/ (~ 25,794 images)
+│       │   ├── test_image/ (~ 7,220 images)
+│       │   └── unseen_test_images/ (~ 10,086 images)
 │       ├── Vietnamese Receipts MC_OCR 2021/
-│       │   ├── text_recognition_mcocr_data/ (~ 6585 ảnh)
+│       │   ├── text_recognition_mcocr_data/ (~ 6,585 images)
 │       │   ├── text_recognition_train_data.txt
 │       │   └── text_recognition_val_data.txt
 │       ├── anyuuus - Vietnamese OCR with PaddleOCR/
 │       │   ├── 23127151/
-│       │   │   ├── final_crop/ (~ 6155 ảnh)
+│       │   │   ├── final_crop/ (~ 6,155 images)
 │       │   │   └── rec_gt.txt
 │       │   ├── 23127215/
-│       │   │   ├── final_crop/ (~ 8615 ảnh)
+│       │   │   ├── final_crop/ (~ 8,615 images)
 │       │   │   └── rec_gt.txt
 │       │   ├── 23127263/
-│       │   │   ├── final_crop/ (~ 5653 ảnh)
+│       │   │   ├── final_crop/ (~ 5,653 images)
 │       │   │   └── rec_gt.txt
 │       │   └── 23127407/
-│       │       ├── final_crop/ (~ 7892 ảnh)
+│       │       ├── final_crop/ (~ 7,892 images)
 │       │       └── rec_gt.txt
 │       └── Synthetic_Modern/
-│           ├── images/ (~ 30000 ảnh)
+│           ├── images/ (~ 30,000 images)
 │           └── labels.txt
 ├── scripts/
 │   ├── 01_parse_all_datasets.py
@@ -84,8 +84,8 @@ Data Processing/
 │   ├── 04_export_lmdb.py
 │   ├── 05_verify_lmdb.py
 │   └── 06_source_based_analysis.py
-├── processed/              ← ảnh đã chuẩn hóa RGB + labels CSV
-├── lmdb/                   ← LMDB database đầu ra cho TrOCR
+├── processed/              ← Normalized RGB images + labels CSV
+├── lmdb/                   ← Output LMDB databases for TrOCR
 │   ├── word_printed/
 │   │   ├── train/
 │   │   │   ├── data.mdb
@@ -132,7 +132,7 @@ Data Processing/
 
 ---
 
-## Cài đặt
+## Installation
 
 ```bash
 pip install Pillow tqdm scikit-learn lmdb
@@ -140,15 +140,15 @@ pip install Pillow tqdm scikit-learn lmdb
 
 ---
 
-## Hướng dẫn chạy
+## Usage Guide
 
-### Bước 1 — Parse toàn bộ datasets
+### Step 1 — Parse all datasets
 
 ```bash
-# Chạy tất cả
+# Run all datasets
 python scripts/01_parse_all_datasets.py all
 
-# Hoặc chạy từng dataset riêng lẻ để debug
+# Or run individual datasets for debugging
 python scripts/01_parse_all_datasets.py uit
 python scripts/01_parse_all_datasets.py cinnamon
 python scripts/01_parse_all_datasets.py wiki
@@ -158,26 +158,26 @@ python scripts/01_parse_all_datasets.py anyuuus
 python scripts/01_parse_all_datasets.py synthetic
 ```
 
-> **WARNING**: Script sẽ tự động xóa tất cả `labels_master.csv` trước khi chạy để tránh lặp dữ liệu. `save_vocab()` chỉ ghi nhận ký tự từ các parser được chạy trong lần gọi hiện tại — luôn chạy với `all` để có vocab đầy đủ.
+> **WARNING**: The script automatically deletes all `labels_master.csv` files before running to prevent data duplication. `save_vocab()` only records characters from the parsers executed in the current invocation — always run with `all` to get the complete vocabulary.
 
-### Bước 2 — Phân chia train/val/test
+### Step 2 — Split into train/val/test
 
 ```bash
 python scripts/02_split.py
 ```
 
-### Bước 3 — Lọc outlier + ngôn ngữ
+### Step 3 — Filter outliers + language
 
 ```bash
 python scripts/03_filter_outliers.py
 ```
 
-Script thực hiện **2 bước lọc** cho mỗi level (word, line):
+The script performs **2 filtering steps** for each level (word, line):
 
-**Bước 3a — Lọc ngôn ngữ (chạy trước):**
-Loại bỏ label chứa ký tự ngoài bộ ký tự tiếng Việt hợp lệ:
+**Step 3a — Language filtering (runs first):**
+Removes labels containing characters outside the valid Vietnamese character set:
 
-| Script bị loại | Ví dụ | Nguồn chính |
+| Script Removed | Examples | Primary Source |
 |---|---|---|
 | CJK (Chinese/Japanese/Korean) | 漢字, カタカナ | Synthetic_Modern, Anyuuus |
 | Khmer/Cambodian | ក, ន, រ | Synthetic_Modern |
@@ -185,16 +185,16 @@ Loại bỏ label chứa ký tự ngoài bộ ký tự tiếng Việt hợp lệ
 | IPA Phonetic | ɑ, ə, ɛ | Synthetic_Modern |
 | Fullwidth Forms | ，(U+FF0C) | Anyuuus |
 
-Các ký tự Vietnamese hợp lệ được giữ lại:
+Valid Vietnamese characters retained:
 - ASCII printable (space – tilde)
-- Latin-1 Supplement, Latin Extended-A/B (Ă, Đ, Ơ, Ư, v.v.)
-- Latin Extended Additional (Ạ–ỹ: 134 ký tự dấu tiếng Việt)
+- Latin-1 Supplement, Latin Extended-A/B (Ă, Đ, Ơ, Ư, etc.)
+- Latin Extended Additional (Ạ–ỹ: 134 Vietnamese diacritical characters)
 - General Punctuation (–, —, ', ', ", ", …)
 - Superscripts (², ³), Currency (₫)
 
-**Bước 3b — Lọc kích thước ảnh:**
+**Step 3b — Image dimension filtering:**
 
-| Level | Filter | Giá trị |
+| Level | Filter | Value |
 |---|---|---|
 | Word | min_width, min_height | 10px |
 | Word | max_height | 300px |
@@ -205,142 +205,142 @@ Các ký tự Vietnamese hợp lệ được giữ lại:
 | Line | max_width | 3000px |
 | Line | min aspect ratio (W/H) | 1.0 |
 
-> **Note**: Lọc ngôn ngữ chạy **trước** lọc kích thước để tránh mở ảnh không cần thiết (tiết kiệm I/O).
+> **Note**: Language filtering runs **before** dimension filtering to avoid unnecessary image I/O operations.
 
-### Bước 4 — Xuất LMDB
+### Step 4 — Export to LMDB
 
 ```bash
 python scripts/04_export_lmdb.py
 ```
 
-> **Note**: Script tự động ưu tiên `labels_filtered.csv`. Nếu chưa chạy bước 3, sẽ dùng `labels_split.csv`.
+> **Note**: The script automatically prioritizes `labels_filtered.csv`. If Step 3 has not been run, it falls back to `labels_split.csv`.
 
 ---
 
-## Các bộ dữ liệu
+## Datasets
 
-### Chữ viết tay (Handwritten)
+### Handwritten
 
-| Dataset | Level | Số mẫu | Ghi chú |
+| Dataset | Level | Sample Count | Notes |
 |---|---|---|---|
-| UIT_HWDB | word / line / paragraph | ~110k / ~7k / ~1k | 249 người viết, có writer ID |
-| Cinnamon AI | line | ~2.385 | Địa chỉ thực tế, chữ ngoáy khó |
-| Viet-Wiki-Handwriting | paragraph | ~5.796 | Synthetic từ Wikipedia tiếng Việt |
+| UIT_HWDB | word / line / paragraph | ~110k / ~7k / ~1k | 249 writers, includes writer ID |
+| Cinnamon AI | line | ~2,385 | Real-world addresses, difficult cursive handwriting |
+| Viet-Wiki-Handwriting | paragraph | ~5,796 | Synthetic from Vietnamese Wikipedia |
 
-### Chữ in (Printed)
+### Printed
 
-| Dataset | Level | Ghi chú |
+| Dataset | Level | Notes |
 |---|---|---|
-| VinText_Cropped | word | Chữ in từ ảnh thực tế |
-| Vietnamese Receipts MC_OCR 2021 | line | Hóa đơn, biên lai |
-| Anyuuus – PaddleOCR | line | Văn bản scan (ngôn ngữ lịch sử) |
-| **Synthetic_Modern** | **line** | **Synthetic printed, 46k corpus hiện đại** |
+| VinText_Cropped | word | Printed text from real-world images |
+| Vietnamese Receipts MC_OCR 2021 | line | Invoices and receipts |
+| Anyuuus – PaddleOCR | line | Scanned documents (historical language) |
+| **Synthetic_Modern** | **line** | **Synthetic printed, 46k modern corpus** |
 
 ---
 
-## Schema CSV
+## CSV Schema
 
-Mỗi file `labels_master.csv` (output của Script 1), `labels_split.csv` (output của Script 2), và `labels_filtered.csv` (output của Script 3) có cấu trúc:
+Each file — `labels_master.csv` (output of Script 1), `labels_split.csv` (output of Script 2), and `labels_filtered.csv` (output of Script 3) — has the following structure:
 
-| Cột | Kiểu | Mô tả |
+| Column | Type | Description |
 |---|---|---|
-| `filename` | string | Tên file ảnh trong `processed/{level}/images/` |
-| `label` | string | Nhãn văn bản đã chuẩn hóa NFC |
-| `source` | string | Định danh nguồn (`uit_word`, `cinnamon_d2`, `mcocr`, ...) |
-| `level` | string | Cấp độ: `word` / `line` / `paragraph` |
-| `data_type` | string | `handwritten` hoặc `printed` |
-| `writer_id` | string | ID người viết (nếu có), dùng cho writer-independent split |
-| `pre_split` | string | Gợi ý chia từ cấu trúc thư mục gốc (xem bảng bên dưới) |
-| `final_split` | string | *(Có trong labels_split.csv và labels_filtered.csv)* `train` / `val` / `test` |
+| `filename` | string | Image filename in `processed/{level}/images/` |
+| `label` | string | NFC-normalized text label |
+| `source` | string | Source identifier (`uit_word`, `cinnamon_d2`, `mcocr`, ...) |
+| `level` | string | Level: `word` / `line` / `paragraph` |
+| `data_type` | string | `handwritten` or `printed` |
+| `writer_id` | string | Writer ID (if available), used for writer-independent split |
+| `pre_split` | string | Split hint from original directory structure (see table below) |
+| `final_split` | string | *(Present in labels_split.csv and labels_filtered.csv)* `train` / `val` / `test` |
 
-### Giá trị `pre_split`
+### `pre_split` Values
 
-| Giá trị | Nguồn | Xử lý trong Script 2 |
+| Value | Source | Handling in Script 2 |
 |---|---|---|
-| `train` | Cinnamon Data2, VinText train, MC_OCR train | Giữ nguyên |
-| `val` | Cinnamon Data1, VinText test | Giữ nguyên |
-| `test` | Cinnamon Private_Test, UIT test_data, VinText unseen | Giữ nguyên |
+| `train` | Cinnamon Data2, VinText train, MC_OCR train | Kept as-is |
+| `val` | Cinnamon Data1, VinText test | Kept as-is |
+| `test` | Cinnamon Private_Test, UIT test_data, VinText unseen | Kept as-is |
 | `train_pool` | UIT_HWDB train_data | Writer 1–229 → train, Writer 230–249 → val |
-| `unassigned` | Viet_Wiki | Chia ngẫu nhiên 80/10/10 |
-| `anyuuus_pool` | Anyuuus | Group-split theo Document ID 80/10/10 |
-| `synthetic_pool` | Synthetic_Modern | Chia ngẫu nhiên 90/5/5 |
+| `unassigned` | Viet_Wiki | Random split 80/10/10 |
+| `anyuuus_pool` | Anyuuus | Group-split by Document ID 80/10/10 |
+| `synthetic_pool` | Synthetic_Modern | Random split 90/5/5 |
 
 ---
 
-## Chiến lược phân chia dữ liệu
+## Data Splitting Strategy
 
 ### Writer-Independent Split (UIT_HWDB)
 
-Mỗi người viết chỉ xuất hiện trong đúng một tập (train hoặc val hoặc test). Điều này đảm bảo model được đánh giá trên chữ viết của những người chưa từng thấy trong quá trình huấn luyện.
+Each writer appears in exactly one split (train, val, or test). This ensures the model is evaluated on handwriting from writers never seen during training.
 
 ```
 Writer ID  1 – 229  →  train  (91.6%)
 Writer ID 230 – 249  →  val   (8.0%)
-Writer ID 250 – 255  →  test  (tập test_data của tác giả)
+Writer ID 250 – 255  →  test  (original author's test_data split)
 ```
 
 ### Group Split (Anyuuus)
 
-Tất cả dòng văn bản crop từ cùng một tài liệu được giữ trong cùng một tập. Tránh trường hợp model thấy các dòng khác của cùng một văn bản trong training, nhưng lại được test trên một dòng còn lại của chính văn bản đó (data leakage theo tài liệu).
+All text lines cropped from the same source document are kept within the same split. This prevents the scenario where the model sees other lines from the same document during training but is tested on a remaining line from that same document (document-level data leakage).
 
 ### Random Split (Viet_Wiki)
 
-Dữ liệu synthetic không có thông tin người viết, dùng `train_test_split(random_state=42)` chia 80/10/10. `random_state=42` đảm bảo kết quả tái lập hoàn toàn.
+Synthetic data has no writer identity information; `train_test_split(random_state=42)` is used to split 80/10/10. `random_state=42` ensures fully reproducible results.
 
-### Random Split (Synthetic_Modern)  
+### Random Split (Synthetic_Modern)
 
-Dữ liệu synthetic sạch, không có rủi ro data leakage. Tỷ lệ **90/5/5** (thay vì 80/10/10) để tối đa lượng dữ liệu hiện đại trong training, pha loãng ngôn ngữ lịch sử từ Anyuuus.
+Clean synthetic data with no data leakage risk. A **90/5/5** ratio (instead of 80/10/10) is used to maximize the amount of modern linguistic data in training, diluting the historical language bias from the Anyuuus dataset.
 
 ---
 
 ## Data Filtering
 
-Script `03_filter_outliers.py` áp dụng **2 bộ lọc** trước khi export LMDB:
+Script `03_filter_outliers.py` applies **2 filters** before LMDB export:
 
-### Lọc ngôn ngữ (non-Vietnamese character removal)
+### Language Filtering (non-Vietnamese character removal)
 
-Loại bỏ toàn bộ label+image nếu label chứa **bất kỳ ký tự nào** ngoài bộ ký tự tiếng Việt hợp lệ. Bộ lọc sử dụng whitelist gồm 10 dải Unicode (xem `ALLOWED_RANGES` trong script), bao phủ toàn bộ 256 ký tự trong `final_vietnamese_vocab.txt`.
+Removes the entire label+image pair if the label contains **any character** outside the valid Vietnamese character set. The filter uses a whitelist of 10 Unicode ranges (see `ALLOWED_RANGES` in the script), covering all 256 characters in `final_vietnamese_vocab.txt`.
 
-Các script phổ biến bị loại:
-- **CJK** (~109 ký tự): Chinese Hán tự, Japanese Kanji — từ Anyuuus (văn bản lịch sử chữ Nôm) và Synthetic_Modern
-- **Khmer** (~13 ký tự): từ Synthetic_Modern corpus
-- **IPA** (~8 ký tự): ký hiệu phiên âm quốc tế ɑ, ə, ɛ
-- **Cyrillic** (2 ký tự): Т, У
-- **Fullwidth** (1 ký tự): ， (U+FF0C, fullwidth comma)
+Common scripts removed:
+- **CJK** (~109 characters): Chinese Hán tự, Japanese Kanji — from Anyuuus (historical Chữ Nôm text) and Synthetic_Modern
+- **Khmer** (~13 characters): from Synthetic_Modern corpus
+- **IPA** (~8 characters): International Phonetic Alphabet symbols ɑ, ə, ɛ
+- **Cyrillic** (2 characters): Т, У
+- **Fullwidth** (1 character): ， (U+FF0C, fullwidth comma)
 
-### Lọc kích thước ảnh (dimension filters)
+### Image Dimension Filtering
 
-- **Word level**: Loại ảnh < 10px, > 300px height, aspect ratio ngoài 0.3–25.0
-- **Line level**: Loại ảnh < 32px width, < 16px height, > 384px height, > 3000px width, ảnh vuông/dọc (aspect < 1.0)
+- **Word level**: Removes images < 10px, > 300px height, aspect ratio outside 0.3–25.0
+- **Line level**: Removes images < 32px width, < 16px height, > 384px height, > 3000px width, square/portrait images (aspect < 1.0)
 
 ---
 
-## Cấu trúc LMDB
+## LMDB Structure
 
-Mỗi LMDB database tại `lmdb/{level}/{split}/` lưu các key-value theo convention của [deep-text-recognition-benchmark](https://github.com/clovaai/deep-text-recognition-benchmark):
+Each LMDB database at `lmdb/{level}/{split}/` stores key-value pairs following the convention of [deep-text-recognition-benchmark](https://github.com/clovaai/deep-text-recognition-benchmark):
 
 ```
-image-00000001  →  bytes ảnh PNG (RGB, đọc trực tiếp từ disk)
-label-00000001  →  nhãn text encode UTF-8
+image-00000001  →  PNG image bytes (RGB, read directly from disk)
+label-00000001  →  UTF-8 encoded text label
 image-00000002  →  ...
 label-00000002  →  ...
-num-samples     →  tổng số mẫu hợp lệ (string)
+num-samples     →  total number of valid samples (string)
 ```
 
-Cả hai level `word` và `line` đều được tách thành hai LMDB riêng biệt theo `data_type` (`printed` / `handwritten`). Điều này cho phép kiểm soát tỷ lệ dữ liệu và lịch trình fine-tune linh hoạt hơn cho từng loại văn bản.
+Both `word` and `line` levels are separated into two distinct LMDB databases by `data_type` (`printed` / `handwritten`). This allows flexible control over data ratios and fine-tuning schedules for each text type.
 
-Level `paragraph` phục vụ cho DBNet++ text detector (dùng pre-trained, không cần export LMDB).
+The `paragraph` level serves the DBNet text detector (uses pre-trained weights, no LMDB export needed).
 
-### Ánh xạ level LMDB → thư mục ảnh gốc
+### LMDB Level → Source Image Directory Mapping
 
-| Level LMDB | CSV nguồn | Thư mục ảnh |
+| LMDB Level | Source CSV | Image Directory |
 |---|---|---|
 | `word_printed` | `processed/word/labels_filtered.csv` | `processed/word/images/` |
 | `word_handwritten` | `processed/word/labels_filtered.csv` | `processed/word/images/` |
 | `line_printed` | `processed/line/labels_filtered.csv` | `processed/line/images/` |
 | `line_handwritten` | `processed/line/labels_filtered.csv` | `processed/line/images/` |
 
-### Sử dụng trong training TrOCR
+### Usage in TrOCR Training
 
 ```
 Stage 1a - Pre-warm encoder (Printed)    : lmdb/word_printed/train/
@@ -353,52 +353,52 @@ Stage 2b - Handwritten adapt             : lmdb/line_handwritten/train/
 
 ## Vocabulary
 
-Có 2 file vocab phục vụ các mục đích khác nhau:
+There are 2 vocabulary files serving different purposes:
 
-### `vocab/vietnamese_vocab.txt` (raw, ~409 ký tự)
+### `vocab/vietnamese_vocab.txt` (raw, ~409 characters)
 
-File **tự động tạo** bởi Script 01 — chứa **toàn bộ** ký tự xuất hiện trong data, bao gồm cả ký tự ngoại lai (CJK, Khmer, Cyrillic, IPA). Dùng để kiểm tra, debug, và phân tích dữ liệu.
+**Automatically generated** by Script 01 — contains **all** characters appearing in the data, including foreign characters (CJK, Khmer, Cyrillic, IPA). Used for inspection, debugging, and data analysis.
 
-> **WARNING**: `save_vocab()` chỉ ghi nhận ký tự từ các parser được chạy trong lần gọi hiện tại. Luôn chạy `01_parse_all_datasets.py all` để có vocab đầy đủ.
+> **WARNING**: `save_vocab()` only records characters from the parsers executed in the current invocation. Always run `01_parse_all_datasets.py all` to get the complete vocabulary.
 
-### `final_vietnamese_vocab.txt` (curated, 256 ký tự) ← **Dùng cho TrOCR tokenizer**
+### `final_vietnamese_vocab.txt` (curated, 256 characters) ← **Used for TrOCR tokenizer**
 
-File **đã xử lý thủ công** — chỉ chứa các ký tự tiếng Việt hợp lệ. Đây là file chính thức để cấu hình character-level tokenizer cho TrOCR.
+**Manually curated** file — contains only valid Vietnamese characters. This is the official file for configuring the character-level tokenizer for TrOCR.
 
-**Thống kê:**
+**Statistics:**
 
-| Nhóm | Số ký tự | Chi tiết |
+| Group | Character Count | Details |
 |---|---|---|
 | ASCII printable | 95 | Space, digits 0–9, A–Z, a–z, punctuation |
 | Vietnamese diacritics | 134 | 67 uppercase + 67 lowercase (Ạ–ỹ, Ă–ặ, Đ–đ, Ơ–ợ, Ư–ự) |
-| Other symbols | 27 | °, ², ³, –, —, ', ', ", ", ₫, ⁰, ⁴–⁹, v.v. |
-| **Tổng** | **256** | |
+| Other symbols | 27 | °, ², ³, –, —, ', ', ", ", ₫, ⁰, ⁴–⁹, etc. |
+| **Total** | **256** | |
 
-**Validation đã kiểm tra:**
-- ✅ 134/134 Vietnamese diacritics đầy đủ (tất cả tổ hợp nguyên âm + dấu thanh)
-- ✅ Digits 0–9, ASCII A–Z/a–z đầy đủ
-- ✅ Ký hiệu tiền tệ ₫ (Vietnamese đồng) có mặt
-- ✅ Không chứa CJK, Khmer, Thai, Cyrillic, IPA
-- ✅ Tất cả 256 ký tự đều nằm trong `ALLOWED_RANGES` của `03_filter_outliers.py`
+**Validation checks performed:**
+- ✅ 134/134 Vietnamese diacritics complete (all vowel + tone mark combinations)
+- ✅ Digits 0–9, ASCII A–Z/a–z complete
+- ✅ Currency symbol ₫ (Vietnamese đồng) present
+- ✅ No CJK, Khmer, Thai, Cyrillic, or IPA characters
+- ✅ All 256 characters fall within the `ALLOWED_RANGES` of `03_filter_outliers.py`
 
-**Sử dụng cho TrOCR tokenizer:**
+**Usage for TrOCR tokenizer:**
 ```
 Vocab size: 256 characters + 4 special tokens = 260
 Special tokens: <s> (BOS), </s> (EOS), <pad>, <unk>
 ```
 
-Tokenizer sẽ thay thế RoBERTa BPE tokenizer (50,265 tokens) bằng character-level tokenizer với 260 tokens — giảm embedding layer từ ~38M params xuống ~0.2M params.
+The tokenizer replaces the RoBERTa BPE tokenizer (50,265 tokens) with a character-level tokenizer of 260 tokens — reducing the embedding layer from ~38M params to ~0.2M params.
 
 ---
 
-## Lưu ý kỹ thuật
+## Technical Notes
 
-**Unicode NFC** — Tất cả label đều được chuẩn hóa về Unicode NFC trước khi lưu. Tiếng Việt có thể biểu diễn dấu thanh theo 2 cách (NFC: `ộ` = 1 codepoint; NFD: `ộ` = 3 codepoint). Không chuẩn hóa sẽ khiến CER bị tính sai ngay cả khi model nhận dạng đúng về mặt thị giác.
+**Unicode NFC** — All labels are normalized to Unicode NFC before saving. Vietnamese can represent tone marks in 2 ways (NFC: `ộ` = 1 codepoint; NFD: `ộ` = 3 codepoints). Without normalization, CER would be miscalculated even when the model recognizes text correctly from a visual standpoint.
 
-**Reproducibility** — Tất cả phép chia ngẫu nhiên đều dùng `random_state=42` (sklearn). Chạy lại bất kỳ lúc nào cũng cho kết quả split giống hệt nhau.
+**Reproducibility** — All random splits use `random_state=42` (sklearn). Re-running at any time produces identical split results.
 
-**Duplicate Prevention** — Script `01_parse_all_datasets.py` tự động xóa tất cả `labels_master.csv` trước khi chạy, ngăn chặn duplicate khi chạy lại.
+**Duplicate Prevention** — Script `01_parse_all_datasets.py` automatically deletes all `labels_master.csv` files before running, preventing duplicates on re-execution.
 
-**No Double Encoding** — `04_export_lmdb.py` đọc bytes ảnh PNG trực tiếp từ disk thay vì re-encode qua PIL, tiết kiệm ~220k decode+encode cycles. Bước validation (100 ảnh đầu tiên) kiểm tra format consistency.
+**No Double Encoding** — `04_export_lmdb.py` reads PNG image bytes directly from disk instead of re-encoding through PIL, saving ~220k decode+encode cycles. A validation step (first 100 images) checks format consistency.
 
-**Windows vs Linux** — LMDB trên Linux tự động mở rộng `map_size`. Trên Windows, `map_size` phải được khai báo đủ lớn từ đầu. Script tính `map_size` dựa trên dung lượng file thực tế trên disk nhân với `MAP_SIZE_SAFETY_FACTOR` (mặc định 3.0x), kết hợp cơ chế retry tự động tăng gấp đôi nếu gặp lỗi `MDB_MAP_FULL`.
+**Windows vs Linux** — LMDB on Linux automatically expands `map_size`. On Windows, `map_size` must be declared large enough upfront. The script calculates `map_size` based on actual file sizes on disk multiplied by `MAP_SIZE_SAFETY_FACTOR` (default 3.0x), combined with an automatic retry mechanism that doubles the size if an `MDB_MAP_FULL` error is encountered.

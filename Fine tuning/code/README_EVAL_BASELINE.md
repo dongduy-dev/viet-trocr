@@ -2,7 +2,52 @@
 
 > **Location:** `Fine tuning/code/`
 > **Entry point:** `evaluate_baselines.py`
+> **Notebook:** `Viet_TrOCR.ipynb` → **"EXTERNAL BASELINE EVALUATION"** section
 > **Dependencies:** `vietocr`, `jiwer`, `lmdb`, `Pillow`, `tqdm`
+
+---
+
+## Colab Quick Start
+
+This evaluation is run from the **"EXTERNAL BASELINE EVALUATION"** section of `Viet_TrOCR.ipynb`.
+
+### Prerequisites
+
+Before running baseline evaluation, ensure:
+1. The [Environment Setup](README.md#5-environment-setup) cells have been run (Drive mounted, LMDB copied to local SSD, code copied)
+2. LMDB test sets exist at `/content/lmdb/line_printed/test` and `/content/lmdb/line_handwritten/test`
+
+> **Note:** Unlike TrOCR evaluation, baseline evaluation does NOT require `final_model/`. VietOCR and CRNN weights are downloaded automatically.
+
+### Step-by-Step
+
+**Cell 1 — Install baseline dependencies:**
+
+```python
+!pip install -q vietocr jiwer lmdb Pillow tqdm
+```
+
+**Cell 2 — Run baselines:**
+
+```python
+%cd /content/trocr_viet
+!python evaluate_baselines.py \
+    --test_printed /content/lmdb/line_printed/test \
+    --test_handwritten /content/lmdb/line_handwritten/test \
+    --output_dir /content/drive/MyDrive/OCR/checkpoints/baseline_eval \
+    --device cuda
+```
+
+**Cell 3 — View results:**
+
+```python
+import json
+with open("/content/drive/MyDrive/OCR/checkpoints/baseline_eval/baseline_metrics_summary.json") as f:
+    data = json.load(f)
+print(json.dumps(data, indent=2, ensure_ascii=False))
+```
+
+**Expected runtime:** ~45 minutes on NVIDIA L4 (4,477 samples × 2 baselines, sequential inference).
 
 ---
 

@@ -2,7 +2,54 @@
 
 > **Location:** `Fine tuning/code/`
 > **Entry point:** `evaluate_and_analyze.py`
+> **Notebook:** `Viet_TrOCR.ipynb` → **"EVALUATE"** section
 > **Dependencies:** `transformers`, `jiwer`, `Pillow`, `tqdm`, `pyvi`, `openpyxl`
+
+---
+
+## Colab Quick Start
+
+This evaluation is run from the **"EVALUATE"** section of `Viet_TrOCR.ipynb`.
+
+### Prerequisites
+
+Before running evaluation, ensure:
+1. The [Environment Setup](README.md#5-environment-setup) cells have been run (Drive mounted, LMDB copied to local SSD, code copied)
+2. `final_model/` exists on Google Drive at `checkpoints/final_model/` (see [Manual Export](README.md#d-manual-final-model-export-notebook-section-manual-final-model-export) if needed)
+3. LMDB test sets exist at `/content/lmdb/line_printed/test` and `/content/lmdb/line_handwritten/test`
+
+### Step-by-Step
+
+**Cell 1 — Install additional dependency:**
+
+```python
+!pip install pyvi
+```
+
+**Cell 2 — Run evaluation:**
+
+```python
+!python evaluate_and_analyze.py \
+    --model_path /content/drive/MyDrive/OCR/checkpoints/final_model \
+    --test_printed /content/lmdb/line_printed/test \
+    --test_handwritten /content/lmdb/line_handwritten/test \
+    --output_dir /content/drive/MyDrive/OCR/checkpoints/evaluation \
+    --batch_size 4 \
+    --repetition_penalty 1.2
+```
+
+**Expected runtime:** ~30 minutes on NVIDIA L4 (4,477 samples at ~2 FPS).
+
+**Quick test (first 50 samples):**
+
+```python
+!python evaluate_and_analyze.py \
+    --model_path /content/drive/MyDrive/OCR/checkpoints/final_model \
+    --test_printed /content/lmdb/line_printed/test \
+    --test_handwritten /content/lmdb/line_handwritten/test \
+    --output_dir /content/drive/MyDrive/OCR/checkpoints/evaluation_test \
+    --max_samples 50
+```
 
 ---
 

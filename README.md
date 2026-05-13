@@ -206,13 +206,30 @@ git clone https://github.com/dongduy-dev/viet-trocr.git
 cd viet-trocr
 ```
 
-### 2. Navigate to Component READMEs
+### 2. Open the Colab Notebook
+
+The primary entry point for all operations is **`Viet_TrOCR.ipynb`** (at the repository root).
+Upload it to Google Colab and use the appropriate section:
+
+| Notebook Section | Task | Time on L4 |
+|---|---|---|
+| **FINE TUNING** | Multi-stage curriculum training (Stage 1 → 2a → 2b) | ~42 hours |
+| **EVALUATE** | Full test set evaluation with post-processing ablation | ~30 min |
+| **EXTERNAL BASELINE EVALUATION** | VietOCR + CRNN benchmark comparison | ~45 min |
+| **MANUAL FINAL MODEL EXPORT** | Export best checkpoint to HuggingFace format | ~5 min |
+| **INTERFACE** | Launch Gradio web UI for live OCR inference | Instant |
+
+### 3. Component READMEs
+
+For detailed documentation on each module:
 
 | Task | Directory | README |
 |---|---|---|
 | Prepare training data | `Data Processing/` | [Data Processing README](Data%20Processing/README.md) |
 | Generate synthetic printed data | `Generate Synthetic Printed Data/` | [Synthetic Data README](Generate%20Synthetic%20Printed%20Data/README.md) |
 | Train the model | `Fine tuning/code/` | [Training Pipeline README](Fine%20tuning/code/README.md) |
+| Evaluate the model | `Fine tuning/code/` | [Evaluation README](Fine%20tuning/code/README_EVAL.md) |
+| Benchmark baselines | `Fine tuning/code/` | [Baseline Evaluation README](Fine%20tuning/code/README_EVAL_BASELINE.md) |
 | Run inference | `interface/` | [Interface README](interface/README.md) |
 
 > Each sub-README contains its own installation instructions, dependency lists, and step-by-step guides.

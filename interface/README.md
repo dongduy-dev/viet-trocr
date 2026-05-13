@@ -124,6 +124,9 @@ Safe for T4 (16 GB) and L4 (24 GB).
 
 ## Colab Deployment
 
+The interface can be launched using the **"INTERFACE"** section of `Viet_TrOCR.ipynb`
+(located at the repository root). The cells below are pre-configured in the notebook.
+
 ### Google Drive Setup
 
 ```

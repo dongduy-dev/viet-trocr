@@ -140,6 +140,68 @@ pip install Pillow tqdm scikit-learn lmdb
 
 ---
 
+## Dataset Download
+
+Before running the pipeline, you need to download the raw datasets and place them in the correct directory structure.
+
+### Download Links
+
+| Dataset | Contents | Size | Link |
+|---|---|---|---|
+| **Printed** | VinText, MC-OCR 2021, Anyuuus, Synthetic_Modern | ~2.52 GB | [Google Drive](https://drive.google.com/file/d/1Z-2pMTMPLuihWYU0pJYIVb1AvbWlJPha/view) |
+| **Handwritten** | UIT-HWDB, Cinnamon AI, Viet-Wiki-Handwriting | 3.09 GB | [Google Drive](https://drive.google.com/file/d/10W3zPtEGnAXk4XhjHr4motOWxBbuJe3m/view) |
+
+### Download Instructions
+
+**Option 1 — Manual download (browser):**
+
+1. Click the Google Drive links above
+2. Click **Download** (you may need to confirm for large files)
+3. Extract the downloaded archives
+
+**Option 2 — Command line (using `gdown`):**
+
+```bash
+pip install gdown
+
+# Download Printed dataset
+gdown --fuzzy "https://drive.google.com/file/d/1Z-2pMTMPLuihWYU0pJYIVb1AvbWlJPha/view" -O printed_data.zip
+
+# Download Handwritten dataset
+gdown --fuzzy "https://drive.google.com/file/d/10W3zPtEGnAXk4XhjHr4motOWxBbuJe3m/view" -O handwritten_data.zip
+```
+
+### Placement
+
+After extracting, place the contents into the `raw_data/` directory so the structure matches:
+
+```
+Data Processing/
+└── raw_data/
+    ├── HandWritten/          ← from handwritten_data archive
+    │   ├── Cinnamon_AI_Dataset/
+    │   ├── UIT_HWDB/
+    │   └── viet_wiki/
+    └── Printed/              ← from printed_data archive
+        ├── VinText_Cropped/
+        ├── Vietnamese Receipts MC_OCR 2021/
+        ├── anyuuus - Vietnamese OCR with PaddleOCR/
+        └── Synthetic_Modern/
+```
+
+> **Important:** The folder names must match exactly as shown above — the parsing scripts use hardcoded paths relative to `raw_data/`. After placing the data, verify with:
+>
+> ```bash
+> # Should show HandWritten/ and Printed/
+> ls raw_data/
+>
+> # Should show subdatasets
+> ls raw_data/HandWritten/
+> ls raw_data/Printed/
+> ```
+
+---
+
 ## Usage Guide
 
 ### Step 1 — Parse all datasets

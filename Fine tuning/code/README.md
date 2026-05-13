@@ -183,28 +183,88 @@ which LMDB path is loaded and passed as `default_data_type` to `LMDBDataset`.
 
 ## 5. Environment Setup
 
-Run the following Colab cells **at the start of every training session** before
-executing `main.py`. The LMDB copy is mandatory — Drive I/O latency (~50ms/read)
-is ~50× slower than local SSD (~1ms/read) on 125k+ random-access samples.
+All training, evaluation, and inference are designed to run on **Google Colab** using
+the `Viet_TrOCR.ipynb` notebook located at the repository root. The notebook contains
+5 sections with pre-configured cells.
+
+### Google Drive Structure
+
+Upload the following to your Google Drive before starting:
+
+```
+My Drive/OCR/
+├── code/                       ← Fine tuning/code/ (this directory)
+│   ├── main.py
+│   ├── config.yaml
+│   ├── requirements.txt
+│   ├── evaluate_and_analyze.py
+│   ├── evaluate_baselines.py
+│   ├── eval_utils.py
+│   ├── address_corrector.py
+│   ├── core/
+│   ├── data/
+│   └── vocab/
+├── interface/                  ← interface/ directory
+│   ├── app.py
+│   ├── pipeline.py
+│   └── modules/
+├── lmdb/                       ← Exported LMDB databases
+│   ├── word_printed/
+│   ├── word_handwritten/
+│   ├── line_printed/
+│   └── line_handwritten/
+├── checkpoints/                ← Created automatically during training
+│   └── final_model/            ← Exported HuggingFace model
+└── logs/                       ← Training logs
+```
+
+### Setup Cells (run at the start of every Colab session)
+
+**Cell 1 — Mount Drive + Copy LMDB to local SSD:**
 
 ```python
-# Cell 1: Mount Drive
 from google.colab import drive
 drive.mount('/content/drive')
 
-# Cell 2: Copy LMDB to local SSD (CRITICAL — must run every session)
 import os
 os.makedirs('/content/lmdb', exist_ok=True)
-!cp -r "/content/drive/MyDrive/OCR/lmdb/." "/content/lmdb/"
-!du -sh /content/lmdb/*   # Verify all 4 domain directories exist
 
-# Cell 3: Install dependencies
+# Copy LMDB from Drive to local SSD (CRITICAL — Drive I/O is ~50× slower)
+!cp -r "/content/drive/MyDrive/OCR/lmdb/." "/content/lmdb/"
+print("Data copying is complete. Local directory structure:")
+!ls /content/lmdb/
+```
+
+> **Why copy to SSD?** Drive I/O latency (~50ms/read) is ~50× slower than
+> local SSD (~1ms/read) on 125k+ random-access LMDB samples. Without this copy,
+> each training epoch takes 3–5× longer.
+
+**Cell 2 — Install dependencies + Copy code:**
+
+```python
+# Install from requirements.txt
 !pip install -r /content/drive/MyDrive/OCR/code/requirements.txt
 
-# Cell 4: Copy code to local filesystem
-!cp -r "/content/drive/MyDrive/OCR/code/trocr_viet" "/content/trocr_viet"
+# Copy code to local filesystem
+!cp -r "/content/drive/MyDrive/OCR/code" "/content/trocr_viet"
 
-# Cell 5: Verify GPU
+# Move terminal cursor + create __init__.py files
+%cd /content/trocr_viet
+!touch data/__init__.py
+!touch core/__init__.py
+```
+
+**Cell 3 — Disable Drive auto-mount in main.py:**
+
+```python
+# Remove the Google Drive Mount block in main.py using sed
+# (prevents duplicate mount conflict when running from notebook)
+!sed -i '/# ── Google Drive Mount/,/logger.info("Not in Colab/ s/^/# /' /content/trocr_viet/main.py
+```
+
+**Cell 4 — Verify GPU:**
+
+```python
 import torch
 props = torch.cuda.get_device_properties(0)
 print(f"GPU: {props.name} | VRAM: {props.total_memory/1e9:.1f}GB")
@@ -658,52 +718,160 @@ maps to its own single-token ID.
 
 ## 9. Running the Code
 
-### Recommended: 3 Separate Sessions on L4
+All commands below correspond to cells in the `Viet_TrOCR.ipynb` notebook.
+Run the [Setup Cells](#5-environment-setup) at the start of every session.
 
-**Session 1 — Stage 1 (~4–5 hours):**
+### A. Fine-Tuning (Notebook Section: "FINE TUNING")
 
-```bash
-# After running setup cells (Section 5)
-%cd /content/trocr_viet
-!python main.py --stage 1 --config config.yaml
+After running all setup cells:
+
+**Option 1 — Full pipeline (single session, ~42 hours on L4):**
+
+```python
+!python main.py --stage all
 ```
 
-Start before sleep — Stage 1 is the longest stage (20 epochs).
+Runs stages sequentially: **1 → 2a → Fisher → 2b**. Stage 3 is skipped
+automatically (`stage3.enabled: false`). Final model is saved to
+`checkpoint_dir/final_model/` in HuggingFace format **only** with `--stage all`.
 
-**Session 2 — Stage 2a + Fisher (~3 hours):**
+**Option 2 — Individual stages (recommended for Colab time limits):**
 
-```bash
-# Run setup cells first
+```python
+# Stage 1 — Curriculum Learning (~26 hours, requires multiple sessions)
+!python main.py --stage 1
+
+# Stage 2a — Printed Fine-Tuning + Fisher (~10 hours)
 !python main.py --stage 2a --config config.yaml
 
-# Before ending session — verify critical files saved to Drive:
-import os
-base = "/content/drive/MyDrive/OCR/checkpoints"
-for f in ["ewc_state.pt", "stage2a_best.pt"]:
-    size = os.path.getsize(f"{base}/{f}") / 1e6
-    print(f"{f}: {size:.0f} MB")
-# ewc_state.pt should be ~600MB; stage2a_best.pt ~300MB
+# Stage 2b — Handwritten Adaptation (~6.5 hours)
+!python main.py --stage 2b
 ```
 
-**Session 3 — Stage 2b (~3–4 hours):**
+> **After Stage 2a**, verify critical files before ending the session:
+> ```python
+> import os
+> base = "/content/drive/MyDrive/OCR/checkpoints"
+> for f in ["ewc_state.pt", "stage2a_best.pt"]:
+>     size = os.path.getsize(f"{base}/{f}") / 1e9
+>     print(f"{f}: {size:.2f} GB")
+> # ewc_state.pt should be ~2.87 GB; stage2a_best.pt ~4.31 GB
+> ```
 
-```bash
-# Run setup cells first
-!python main.py --stage 2b --config config.yaml
-```
+**Hot-reload code (without restarting training):**
 
-### Full Pipeline (single session, if runtime allows)
+If you update source code on Google Drive during a session:
 
-```bash
+```python
+%cd /content
+!rm -rf /content/trocr_viet
+!cp -r "/content/drive/MyDrive/OCR/code" "/content/trocr_viet"
 %cd /content/trocr_viet
-!python main.py --stage all --config config.yaml
+!touch data/__init__.py
+!touch core/__init__.py
 ```
 
-Active stages run sequentially: **1 → 2a → 2b**. Stage 3 is skipped automatically
-because `stage3.enabled: false` in config. Final model is saved to
-`checkpoint_dir/final_model/` in HuggingFace format **only** when using
-`--stage all`. If you run stages individually, see
-[Manual Final Model Export](#manual-final-model-export-after-early-stop-or-individual-stage-runs).
+---
+
+### B. Evaluation (Notebook Section: "EVALUATE")
+
+Evaluates the exported `final_model` on the full test set (4,477 samples) with
+multi-stage post-processing ablation:
+
+```python
+# Install additional dependency
+!pip install pyvi
+
+# Run evaluation
+!python evaluate_and_analyze.py \
+    --model_path /content/drive/MyDrive/OCR/checkpoints/final_model \
+    --test_printed /content/lmdb/line_printed/test \
+    --test_handwritten /content/lmdb/line_handwritten/test \
+    --output_dir /content/drive/MyDrive/OCR/checkpoints/evaluation \
+    --batch_size 4 \
+    --repetition_penalty 1.2
+```
+
+**Outputs** saved to `output_dir/`:
+
+| File | Description |
+|---|---|
+| `metrics_summary.json` | Overall and per-domain CER/WER, PhoBERT comparison |
+| `all_predictions.csv` | Every sample: raw → sanitized → corrected text |
+| `worst_cases_report.csv` | Top 50 worst CER samples for error analysis |
+| `worst_cases_report.md` | Markdown-formatted worst cases |
+
+See [README_EVAL.md](README_EVAL.md) for full evaluation pipeline documentation.
+
+---
+
+### C. External Baseline Evaluation (Notebook Section: "EXTERNAL BASELINE EVALUATION")
+
+Benchmarks VietOCR (VGG-Transformer) and CRNN-Seq2Seq on the same test set:
+
+```python
+# Install baseline dependencies
+!pip install -q vietocr jiwer lmdb Pillow tqdm
+
+# Run baselines
+%cd /content/trocr_viet
+!python evaluate_baselines.py \
+    --test_printed /content/lmdb/line_printed/test \
+    --test_handwritten /content/lmdb/line_handwritten/test \
+    --output_dir /content/drive/MyDrive/OCR/checkpoints/baseline_eval \
+    --device cuda
+```
+
+**View results:**
+
+```python
+import json
+with open("/content/drive/MyDrive/OCR/checkpoints/baseline_eval/baseline_metrics_summary.json") as f:
+    data = json.load(f)
+print(json.dumps(data, indent=2, ensure_ascii=False))
+```
+
+**Outputs** saved to `output_dir/`:
+
+| File | Description |
+|---|---|
+| `baseline_metrics_summary.json` | CER/WER per domain for VietOCR + CRNN |
+| `vietocr_predictions.csv` | VietOCR per-sample predictions |
+| `crnn_predictions.csv` | CRNN per-sample predictions |
+
+See [README_EVAL_BASELINE.md](README_EVAL_BASELINE.md) for full baseline documentation.
+
+---
+
+### D. Manual Final Model Export (Notebook Section: "MANUAL FINAL MODEL EXPORT")
+
+> [!IMPORTANT]
+> The automatic `final_model/` HuggingFace export **only runs with `--stage all`**
+> (see `main.py` line 972: `if run_all:`). If you ran stages individually
+> (`--stage 2b`) or manually early-stopped training, you must export the final
+> model manually using the cell in the notebook.
+
+**When to use this:**
+
+- You ran `--stage 2b` and training finished or you manually stopped it.
+- You want to export the best checkpoint (`stage2b_best.pt`) as a
+  HuggingFace-format model for inference.
+- You early-stopped before the configured epoch count and the pipeline
+  did not generate `final_model/`.
+
+The export cell in `Viet_TrOCR.ipynb` replicates the exact model initialization
+from `main.py::setup_model()` to ensure the exported model is identical to what
+the training pipeline produces. It performs 9 steps:
+
+1. Load `config.yaml`
+2. Initialize model + processor (slow tokenizer)
+3. Add Vietnamese vocab tokens (NFC-normalized)
+4. Set special token IDs + generation config
+5. Interpolate ViT positional embeddings (24×24 → 8×96)
+6. Fix meta-device tensors
+7. Load `stage2b_best.pt` weights
+8. Save in HuggingFace format (`model.save_pretrained()`)
+9. Validation: reload and verify tokenizer + weight identity
 
 ### Resume After Colab Restart
 
@@ -943,9 +1111,11 @@ print(f"   Path: {final_path}")
 
 ✅ Final model exported → /content/drive/MyDrive/OCR/checkpoints/final_model
   config.json: 0.0 MB
+  generation_config.json: 0.0 MB
   model.safetensors: 580.2 MB
-  preprocessor_config.json: 0.0 MB
-  ...
+  processor_config.json: 0.0 MB 
+  tokenizer.json: 0.0 MB
+  tokenizer_config.json: 0.0 MB
 
 ── Validation: reloading exported model ──
   Tokenizer: 'Đại học Tôn Đức Thắng' → ['Đ', 'ạ', 'i', 'Ġ', 'h', 'ọ', 'c', ...]
@@ -1049,16 +1219,16 @@ EWC ≈ 2–10 × CE  → Good balance     ✓
 EWC ≈ 50 × CE    → EWC dominating   → decrease lambda
 ```
 
-### CER Target Ranges by Stage
+### CER Target Ranges by Stage (Verified on L4)
 
-| Stage end | Printed CER | HW CER |
-|---|---|---|
-| After Stage 1 | 30–60% | 45–75% |
-| After Stage 2a | 5–15% | 40–65% |
-| After Stage 2b | 7–18% | 15–35% |
+| Stage end | Printed CER | HW CER | Notes |
+|---|---|---|---|
+| After Stage 1 (epoch 18) | ~64.6% | Not evaluated | Word-level only, high CER expected |
+| After Stage 2a (epoch 10, best) | **1.90%** | ~32.7% | Best printed checkpoint, EWC anchor |
+| After Stage 2b (epoch 14, best) | **2.12%** | **14.40%** | Final model, best HW CER |
 
-Printed CER worsening up to +2% from Stage 2a → Stage 2b end is acceptable.
-Beyond +2% means EWC lambda needs to be increased.
+Printed CER worsened by only 0.44 percentage points (1.90% → 2.34% peak at epoch 4,
+recovering to 2.20% by epoch 16). Beyond +2% means EWC lambda needs to be increased.
 
 ### Parsing Logs Quickly
 
@@ -1095,11 +1265,11 @@ checkpoints/
 ├── stage1_epoch_009.pt         ← (older deleted — keep_last_n_checkpoints=3)
 ├── stage1_epoch_014.pt
 ├── stage1_epoch_019.pt         ← latest Stage 1 checkpoint
-├── stage1_best.pt              ← best printed CER during Stage 1 (~300MB)
+├── stage1_best.pt              ← best printed CER during Stage 1 (~4.31 GB)
 │
 ├── stage2a_epoch_008.pt
 ├── stage2a_epoch_010.pt
-├── stage2a_best.pt             ← best printed_cer — EWC anchor point (~300MB)
+├── stage2a_best.pt             ← best printed CER — EWC anchor point (~4.31 GB)
 │
 ├── stage2b_epoch_005.pt
 ├── stage2b_epoch_010.pt
@@ -1107,18 +1277,20 @@ checkpoints/
 ├── stage2b_best.pt             ← best HW CER (while printed CER in safety delta)
 ├── stage2b_epoch_018_early_stop.pt   ← if early stopping triggered
 │
-├── ewc_state.pt                ← Fisher diagonal + theta* (~600MB) — CRITICAL
+├── ewc_state.pt                ← Fisher diagonal + theta* (~2.87 GB) — CRITICAL
 │
 └── final_model/                ← HuggingFace format (--stage all or manual export)
     ├── config.json
-    ├── model.safetensors        (or pytorch_model.bin)
+    ├── generation_config.json
+    ├── model.safetensors
+    ├── processor_config.json
     ├── tokenizer.json
-    └── preprocessor_config.json
+    └── tokenizer_config.json
 ```
 
 ### Checkpoint Format
 
-Each `.pt` file contains:
+Each `.pt` file (~4.31 GB) contains:
 
 ```python
 {
@@ -1129,59 +1301,85 @@ Each `.pt` file contains:
     "optimizer":    optimizer.state_dict(),
     "scheduler":    scheduler.state_dict(),
     "scaler":       scaler.state_dict(),    # AMP GradScaler state
-    "metrics":      {"printed_cer": 0.091, "handwritten_cer": 0.234},
-    "best_cer":     0.0845,                 # Best printed CER so far (persists across restarts)
+    "metrics":      {"printed_cer": 0.0217, "handwritten_cer": 0.1467},
+    "best_cer":     0.0190,                 # Best printed CER so far (persists across restarts)
 }
 ```
 
-The `ewc_state.pt` file stores Fisher diagonal and theta* separately because
-they are the same size as the full model's parameter set (~600MB total).
+The `ewc_state.pt` (~2.87 GB) stores the Fisher Information diagonal and theta*
+(Stage 2a anchor weights) separately. This file is critical for Stage 2b — if
+lost, Fisher must be recomputed from the Stage 2a best checkpoint.
 
 ### Drive Storage Budget
 
 | Files | Count | Size each | Subtotal |
 |---|---|---|---|
-| Stage rolling checkpoints (3 per stage × 3 stages) | 9 | ~300MB | ~2.7GB |
-| stage2a_best.pt | 1 | ~300MB | 0.3GB |
-| ewc_state.pt | 1 | ~600MB | 0.6GB |
-| final_model/ | 1 | ~600MB | 0.6GB |
-| **Total** | | | **~4.2GB** |
+| Stage rolling checkpoints (3 per stage × 3 stages) | 9 | ~4.31 GB | ~38.8 GB |
+| Best checkpoints (stage1, stage2a, stage2b) | 3 | ~4.31 GB | ~12.9 GB |
+| ewc_state.pt | 1 | ~2.87 GB | ~2.87 GB |
+| final_model/ (HuggingFace format) | 1 | ~1.3 GB | ~1.3 GB |
+| **Peak total (all stages retained)** | | | **~55.9 GB** |
+| **Minimum (after cleanup)** | | | **~15.8 GB** |
 
-Ensure at least **6GB free** on Google Drive before starting the full pipeline.
+> **Storage tip:** After completing each stage, you can delete older rolling
+> checkpoints to reclaim space. The minimum set needed for production is:
+> `stage2a_best.pt` (EWC anchor) + `ewc_state.pt` + `stage2b_best.pt` +
+> `final_model/` ≈ **12.8 GB**.
+
+Ensure at least **20 GB free** on Google Drive before starting the full pipeline.
 
 ---
 
 ## 12. GPU Guide & Time Estimates
 
-### GPU Comparison (full training: Stage 1 + 2a + 2b)
+### Verified Training Times on NVIDIA L4 (24 GB)
 
-| GPU | VRAM | Train time | Eval time | Total | CU/hr | Total CU | Notes |
-|---|---|---|---|---|---|---|---|
-| **L4** | 24GB | ~5.9h | ~3.1h | **~9h** | 2.0 | **~22 CU** | Recommended |
-| A100 | 40GB | ~2.7h | ~1.4h | **~4.1h** | 3.5 | ~18 CU | Fastest; rare on Colab |
-| V100 | 16GB | ~8.9h | ~4.6h | **~13.5h** | 1.5 | ~23 CU | Not recommended |
-| T4 | 16GB | ~16.5h | ~8.5h | **~25h** | 0.5 | ~13 CU | Sanity testing only |
+The following times are from the actual production training run (49 epochs total):
 
-All estimates include +20% buffer for restarts, LMDB copy (~10min/session),
-and Drive checkpoint saves.
+| Stage | Epochs | Avg Runtime/Epoch | Total Time | Notes |
+|---|---|---|---|---|
+| **Stage 1A** (words) | 5 | 7,622s (127 min) | ~10.6 hours | Full word-level dataset |
+| **Stage 1B** (50% pseudo-lines) | 10 | 4,016s (67 min) | ~11.2 hours | Pseudo-line aggregation reduces batch count |
+| **Stage 1C** (80% pseudo-lines) | 5 | 2,839s (47 min) | ~3.9 hours | Further sample consolidation |
+| **Stage 1 total** | **20** | — | **~25.7 hours** | Curriculum learning phase |
+| **Stage 2a** (printed lines) | 12 | 2,849s (47 min)* | ~9.5 hours | *Epoch 10 re-executed after Colab restart |
+| Fisher computation | 1,000 batches | — | ~10–15 min | One-time computation after Stage 2a |
+| **Stage 2b** (HW+printed, EWC) | 17 | 1,357s (23 min) | ~6.4 hours | 15% replay subsample reduces dataset |
+| **Grand total** | **49** | — | **~41.6 hours** | Pure GPU compute time |
 
-### Stage Breakdown on L4
+> **Note:** Stage 2a epoch 10 was run twice due to a Colab session restart.
+> The second run (best printed CER = 1.90%) was retained. The decreasing
+> per-epoch runtime across Stage 1 phases reflects the curriculum's progressive
+> consolidation of word-level samples into fewer, longer pseudo-line instances.
 
-| Stage | Batches/epoch | Epochs | Train | Eval | Subtotal |
-|---|---|---|---|---|---|
-| Stage 1 | ~3,915 | 20 | ~3.3h | ~0.5h | ~3.8h |
-| Stage 2a | ~2,925 | 11 | ~1.5h | ~0.6h | ~2.1h |
-| Fisher computation | 1000 batches | — | ~45min | — | ~45min |
-| Stage 2b | ~1,663 | 25 | ~2.0h | ~1.3h | ~3.3h |
-| **Total** | | | **~7.0h** | **~2.4h** | **~9.9h** |
+### GPU Comparison (estimated)
+
+| GPU | VRAM | Est. Total | CU/hr | Notes |
+|---|---|---|---|---|
+| **L4** | 24 GB | **~42 hours** | 2.0 | ✅ Verified — recommended |
+| A100 | 40 GB | **~18 hours** | 3.5 | Fastest; rare on Colab |
+| V100 | 16 GB | **~60 hours** | 1.5 | May OOM on large batches |
+| T4 | 16 GB | **~85 hours** | 0.5 | Sanity testing only |
+
+### Checkpoint Storage Impact
+
+| Item | Size | Notes |
+|---|---|---|
+| Each epoch checkpoint (`.pt`) | **4.31 GB** | model + optimizer + scheduler + scaler states |
+| EWC state (`ewc_state.pt`) | **2.87 GB** | Fisher diagonal + theta* (Stage 2a anchor) |
+| Final model (HuggingFace format) | ~1.3 GB | model.safetensors + tokenizer + config |
+| Rolling checkpoints per stage (keep 3) | ~12.9 GB | 3 × 4.31 GB per active stage |
+
+Peak Drive usage occurs during Stage 2b when Stage 2a checkpoints + EWC state +
+Stage 2b rolling checkpoints coexist: **~30–56 GB**.
 
 ### Pre-flight Checklist (before each session)
 
 ```
 [ ] Google Drive mounted
 [ ] LMDB copied to /content/lmdb/ and verified with: du -sh /content/lmdb/*
-[ ] For Stage 2b only: ewc_state.pt exists on Drive (~600MB)
-[ ] Drive has at least 6GB free space
+[ ] For Stage 2b only: ewc_state.pt exists on Drive (~2.87 GB)
+[ ] Drive has at least 20 GB free space (4.31 GB per checkpoint)
 [ ] Startup log shows: Decoder cross-attention UNFROZEN (freeze is disabled)
 [ ] Startup log shows: tokenizer produces single-char tokens (no byte-fallback)
 [ ] After Fisher: magnitude in 1e-5 ~ 1e-3 range

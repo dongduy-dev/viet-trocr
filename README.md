@@ -12,7 +12,7 @@
 
 <br>
 
-*Graduation Thesis — Computer Science*
+*Information Technology Project — Ton Duc Thang University*
 
 </div>
 
@@ -257,9 +257,9 @@ If you use this work in your research, please cite:
 @thesis{huynh2026vietnamese_trocr,
   title   = {Research and Optimization of Vietnamese Printed and Handwritten 
              Text Recognition System Using TrOCR Architecture},
-  author  = {Huynh, Kien Dong Duy},
+  author  = {Huynh, Kien Dong Duy and Nguyen, Chi Vy},
   year    = {2026},
-  type    = {Bachelor's Thesis},
+  type    = {Information Technology Project},
   school  = {Ton Duc Thang University}
 }
 ```
